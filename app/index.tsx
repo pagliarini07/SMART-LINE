@@ -1,25 +1,19 @@
-import { StyleSheet, Text, TextInput, View } from "react-native";
+import { Text, TextInput, View } from "react-native";
 
 export default function Index() {
   return (
-    <View
-      style={{
-        flex: 1,
-        justifyContent: "center",
-        alignItems: "center",
-      }}
-    >
-      <TextInput placeholder="Digite Seu nome" />
-      <text>hello world</text>
+    <View>
+      <Text>SmartLine</Text>
+
+      <Text>Olá, Lucas!</Text>
+
+      <Text>
+        Encontre o serviço que precisa e acompanhe sua fila.
+      </Text>
+
+      <TextInput
+        placeholder="Buscar órgão ou serviço"
+      />
     </View>
   );
 }
-
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-});
