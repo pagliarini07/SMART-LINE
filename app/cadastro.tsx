@@ -13,6 +13,33 @@ export default function Cadastro() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [error, setError] = useState("");
+
+  const handleCadastro = () => {
+    setError("");
+
+    if (!nome || !email || !password || !confirmPassword) {
+        setError("Preencha todos os campos.");
+        return;
+    }
+
+    if (!email.includes("@")) {
+        setError("Digite um e-mail válido.");
+        return;
+    }
+
+    if (password.length < 8) {
+        setError("A senha deve ter pelo menos 8 caracteres.");
+        return;
+    }
+
+    if (password !== confirmPassword) {
+        setError("As senhas não coincidem.");
+        return;
+    }
+
+    console.log("Cadastro válido");
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -74,7 +101,13 @@ export default function Cadastro() {
           onChangeText={setConfirmPassword}
         />
 
-        <Pressable style={styles.registerButton}>
+        {error ? (
+            <Text style={styles.errorText}>
+                {error}
+            </Text>
+            ) : null}
+
+        <Pressable style={styles.registerButton} onPress={handleCadastro}>
           <Text style={styles.registerButtonText}>
             Criar conta
           </Text>
@@ -157,5 +190,11 @@ const styles = StyleSheet.create({
     color: "#0D5BD7",
     fontSize: 15,
     fontWeight: "600",
+  },
+
+  errorText: {
+   color: "#D32F2F",
+   fontSize: 14,
+   marginBottom: 12,
   },
 });
