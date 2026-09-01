@@ -1,3 +1,4 @@
+import { router } from "expo-router";
 import { useState } from "react";
 import {
     Pressable,
@@ -26,8 +27,7 @@ export default function Login() {
             return;
         }
 
-        console.log("E-mail:", email);
-        console.log("Senha:", password);
+        router.replace("/inicio");
         };
 
   return (
