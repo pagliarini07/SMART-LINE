@@ -80,7 +80,7 @@ export default function Login() {
         </Pressable>
 
         <Pressable>
-          <Text style={styles.registerText}>
+          <Text style={styles.registerText} onPress={() => router.push("/cadastro")}>
             Ainda não tenho conta
           </Text>
         </Pressable>

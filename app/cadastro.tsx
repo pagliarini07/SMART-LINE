@@ -1,3 +1,4 @@
+import { router } from "expo-router";
 import { useState } from "react";
 import {
     Pressable,
@@ -38,7 +39,7 @@ export default function Cadastro() {
         return;
     }
 
-    console.log("Cadastro válido");
+    router.replace("/login");;
   };
 
   return (
@@ -114,7 +115,7 @@ export default function Cadastro() {
         </Pressable>
 
         <Pressable>
-          <Text style={styles.loginText}>
+          <Text style={styles.loginText} onPress={() => router.push("/login")}>
             Já tenho uma conta
           </Text>
         </Pressable>

@@ -167,7 +167,7 @@ export default function Index() {
       </View>
 
       {/* BOTÕES */}
-      <Pressable style={styles.startButton}>
+      <Pressable style={styles.startButton} onPress={() => router.push("/cadastro")}>
         <Text style={styles.startButtonText}>
           Começar
         </Text>
