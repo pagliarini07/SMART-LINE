@@ -9,26 +9,38 @@ import {
     View,
 } from "react-native";
 
-export default function Login() {
-    const [email, setEmail] = useState("");
-    const [password, setPassword] = useState("");
-    const [error, setError] = useState("");
+export default function Cadastro() {
+  const [nome, setNome] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [error, setError] = useState("");
 
-    const handleLogin = () => {
-        setError("");
+  const handleCadastro = () => {
+    setError("");
 
-        if (!email || !password) {
-            setError("Preencha todos os campos.");
-            return;
-        }
+    if (!nome || !email || !password || !confirmPassword) {
+        setError("Preencha todos os campos.");
+        return;
+    }
 
-        if (!email.includes("@")) {
-            setError("Digite um e-mail válido.");
-            return;
-        }
+    if (!email.includes("@")) {
+        setError("Digite um e-mail válido.");
+        return;
+    }
 
-        router.replace("/inicio");
-        };
+    if (password.length < 8) {
+        setError("A senha deve ter pelo menos 8 caracteres.");
+        return;
+    }
+
+    if (password !== confirmPassword) {
+        setError("As senhas não coincidem.");
+        return;
+    }
+
+    router.replace("/login");;
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -39,8 +51,19 @@ export default function Login() {
         </Text>
 
         <Text style={styles.title}>
-          Acesse sua conta
+          Crie sua conta
         </Text>
+
+        <Text style={styles.label}>
+          Nome
+        </Text>
+
+        <TextInput
+          style={styles.input}
+          placeholder="Digite seu nome"
+          value={nome}
+          onChangeText={setNome}
+        />
 
         <Text style={styles.label}>
           E-mail
@@ -67,21 +90,33 @@ export default function Login() {
           onChangeText={setPassword}
         />
 
+        <Text style={styles.label}>
+          Confirmar senha
+        </Text>
+
+        <TextInput
+          style={styles.input}
+          placeholder="Digite sua senha novamente"
+          secureTextEntry
+          value={confirmPassword}
+          onChangeText={setConfirmPassword}
+        />
+
         {error ? (
             <Text style={styles.errorText}>
                 {error}
             </Text>
             ) : null}
 
-        <Pressable style={styles.loginButton} onPress={handleLogin}>
-          <Text style={styles.loginButtonText}>
-            Entrar
+        <Pressable style={styles.registerButton} onPress={handleCadastro}>
+          <Text style={styles.registerButtonText}>
+            Criar conta
           </Text>
         </Pressable>
 
         <Pressable>
-          <Text style={styles.registerText} onPress={() => router.push("/cadastro")}>
-            Ainda não tenho conta
+          <Text style={styles.loginText} onPress={() => router.push("/login")}>
+            Já tenho uma conta
           </Text>
         </Pressable>
 
@@ -107,14 +142,14 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     color: "#0D5BD7",
     textAlign: "center",
-    marginBottom: 40,
+    marginBottom: 30,
   },
 
   title: {
     fontSize: 28,
     fontWeight: "700",
     color: "#12234A",
-    marginBottom: 30,
+    marginBottom: 25,
   },
 
   label: {
@@ -131,35 +166,36 @@ const styles = StyleSheet.create({
     borderColor: "#D9E0EA",
     borderRadius: 12,
     paddingHorizontal: 15,
-    marginBottom: 20,
+    marginBottom: 18,
     fontSize: 16,
   },
 
-  loginButton: {
+  registerButton: {
     height: 50,
     backgroundColor: "#0D5BD7",
     borderRadius: 12,
     justifyContent: "center",
     alignItems: "center",
-    marginTop: 10,
+    marginTop: 5,
     marginBottom: 20,
   },
 
-  loginButtonText: {
+  registerButtonText: {
     color: "#FFFFFF",
     fontSize: 16,
     fontWeight: "700",
   },
 
-  registerText: {
+  loginText: {
     textAlign: "center",
     color: "#0D5BD7",
     fontSize: 15,
     fontWeight: "600",
   },
+
   errorText: {
-    color: "#D32F2F",
-    fontSize: 14,
-    marginBottom: 12,
+   color: "#D32F2F",
+   fontSize: 14,
+   marginBottom: 12,
   },
 });
