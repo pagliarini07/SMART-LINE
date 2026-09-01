@@ -1,3 +1,4 @@
+import { useState } from "react";
 import {
     Pressable,
     SafeAreaView,
@@ -8,6 +9,27 @@ import {
 } from "react-native";
 
 export default function Login() {
+    const [email, setEmail] = useState("");
+    const [password, setPassword] = useState("");
+    const [error, setError] = useState("");
+
+    const handleLogin = () => {
+        setError("");
+
+        if (!email || !password) {
+            setError("Preencha todos os campos.");
+            return;
+        }
+
+        if (!email.includes("@")) {
+            setError("Digite um e-mail válido.");
+            return;
+        }
+
+        console.log("E-mail:", email);
+        console.log("Senha:", password);
+        };
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.content}>
@@ -29,6 +51,8 @@ export default function Login() {
           placeholder="Digite seu e-mail"
           keyboardType="email-address"
           autoCapitalize="none"
+          value={email}
+          onChangeText={setEmail}
         />
 
         <Text style={styles.label}>
@@ -39,9 +63,17 @@ export default function Login() {
           style={styles.input}
           placeholder="Digite sua senha"
           secureTextEntry
+          value={password}
+          onChangeText={setPassword}
         />
 
-        <Pressable style={styles.loginButton}>
+        {error ? (
+            <Text style={styles.errorText}>
+                {error}
+            </Text>
+            ) : null}
+
+        <Pressable style={styles.loginButton} onPress={handleLogin}>
           <Text style={styles.loginButtonText}>
             Entrar
           </Text>
@@ -124,5 +156,10 @@ const styles = StyleSheet.create({
     color: "#0D5BD7",
     fontSize: 15,
     fontWeight: "600",
+  },
+  errorText: {
+    color: "#D32F2F",
+    fontSize: 14,
+    marginBottom: 12,
   },
 });
