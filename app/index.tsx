@@ -1,4 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
+import { router } from "expo-router";
 import {
   Pressable,
   SafeAreaView,
@@ -172,7 +173,7 @@ export default function Index() {
         </Text>
       </Pressable>
 
-      <Pressable style={styles.loginButton}>
+      <Pressable style={styles.loginButton} onPress={() => router.push("/login")}>
         <Text style={styles.loginText}>
           Já tenho conta
         </Text>
