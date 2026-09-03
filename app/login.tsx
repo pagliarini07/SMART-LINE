@@ -1,12 +1,12 @@
 import { router } from "expo-router";
 import { useState } from "react";
 import {
-    Pressable,
-    SafeAreaView,
-    StyleSheet,
-    Text,
-    TextInput,
-    View,
+  Pressable,
+  SafeAreaView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
 } from "react-native";
 
 export default function Login() {
@@ -27,7 +27,7 @@ export default function Login() {
             return;
         }
 
-        router.replace("/inicio");
+        router.replace("/locais");
         };
 
   return (

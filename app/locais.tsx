@@ -99,7 +99,7 @@ const CATEGORIAS = [
 
 export default function Locais() {
   const abrirServicos = () => {
-    router.push("/inicio" as never);
+    router.push("/servicos" as never);
   };
 
   return (
