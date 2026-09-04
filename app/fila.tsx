@@ -40,7 +40,7 @@ export default function Fila() {
 
       <View style={styles.header}>
         <Pressable style={styles.backButton} onPress={() => router.back()}>
-          <Ionicons name="chevron-back" size={22} color={COLORS.text} />
+          <Ionicons name="chevron-back" size={22} color={COLORS.white} />
         </Pressable>
         <Text style={styles.headerTitle}>{nomeServico}</Text>
       </View>
@@ -86,7 +86,7 @@ const styles = StyleSheet.create({
     width: 38,
     height: 38,
     borderRadius: 19,
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.blue,
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 1,

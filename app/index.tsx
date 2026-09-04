@@ -167,15 +167,15 @@ export default function Index() {
       </View>
 
       {/* BOTÕES */}
-      <Pressable style={styles.startButton} onPress={() => router.push("/cadastro")}>
+      <Pressable style={styles.startButton} onPress={() => router.push("/login")}>
         <Text style={styles.startButtonText}>
-          Começar
+          Entrar
         </Text>
       </Pressable>
 
-      <Pressable style={styles.loginButton} onPress={() => router.push("/login")}>
+      <Pressable style={styles.loginButton} onPress={() => router.push("/cadastro")}>
         <Text style={styles.loginText}>
-          Já tenho conta
+          Criar conta
         </Text>
       </Pressable>
     </SafeAreaView>
@@ -396,7 +396,7 @@ const styles = StyleSheet.create({
 
   startButtonText: {
     color: COLORS.white,
-    fontSize: 14,
+    fontSize: 20,
     fontWeight: "600",
   },
 
@@ -412,7 +412,7 @@ const styles = StyleSheet.create({
 
   loginText: {
     color: COLORS.blue,
-    fontSize: 14,
+    fontSize: 18,
     fontWeight: "600",
   },
 });

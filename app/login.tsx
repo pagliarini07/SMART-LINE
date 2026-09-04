@@ -1,3 +1,4 @@
+import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { useState } from "react";
 import {
@@ -32,6 +33,9 @@ export default function Login() {
 
   return (
     <SafeAreaView style={styles.container}>
+      <Pressable style={styles.backButton} onPress={() => router.back()}>
+        <Ionicons name="chevron-back" size={22} color="#FFFFFF" />
+      </Pressable>
       <View style={styles.content}>
 
         <Text style={styles.logo}>
@@ -162,4 +166,14 @@ const styles = StyleSheet.create({
     fontSize: 14,
     marginBottom: 12,
   },
+  backButton: {
+    marginTop: 20,
+    marginLeft: 20,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: "#0757D8",
+    alignItems: "center",
+    justifyContent: "center",
+  }
 });
