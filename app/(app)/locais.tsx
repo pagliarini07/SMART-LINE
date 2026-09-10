@@ -356,14 +356,17 @@ export default function Locais() {
           </Text>
         </View>
 
-        <View style={styles.tabItem}>
+        <Pressable
+          style={styles.tabItem}
+          onPress={() => router.push("/minha-senha")}
+        >
           <Ionicons
             name="ticket-outline"
             size={22}
             color={COLORS.secondary}
           />
           <Text style={styles.tabLabel}>Minha senha</Text>
-        </View>
+        </Pressable>
 
         <View style={styles.tabItem}>
           <Ionicons
