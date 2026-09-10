@@ -7,6 +7,7 @@ export default function AppLayout() {
       <Stack.Screen name="servicos" />
       <Stack.Screen name="fila" />
       <Stack.Screen name="minha-senha" />
+      <Stack.Screen name="perfil" />
     </Stack>
   );
 }
