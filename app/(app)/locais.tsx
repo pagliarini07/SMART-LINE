@@ -76,6 +76,12 @@ const LOCAIS: Local[] = [
 
 const CATEGORIAS = [
   {
+    id: "todos",
+    nome: "Todos",
+    icon: "apps-outline" as keyof typeof Ionicons.glyphMap,
+    width: 64,
+  },  
+  {
     id: "cartorios",
     nome: "Cartórios",
     icon: "business-outline" as keyof typeof Ionicons.glyphMap,
@@ -102,13 +108,16 @@ const CATEGORIAS = [
 ];
 
 export default function Locais() {
-  const [categoriaAtiva, setCategoriaAtiva] = useState("cartorios");
+  const [categoriaAtiva, setCategoriaAtiva] = useState("todos");
   const abrirServicos = () => {
     router.push("/servicos" as never);
   };
-  const locaisFiltrados = LOCAIS.filter(
-    (local) => local.tipo === categoriaAtiva
-  );
+  const locaisFiltrados = LOCAIS.filter((local) => {
+    if (categoriaAtiva === "todos") {
+      return true;
+    }
+    return local.tipo === categoriaAtiva
+ });
 
   return (
     <SafeAreaView style={styles.screen}>
