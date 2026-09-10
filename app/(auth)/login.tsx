@@ -1,6 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { useState } from "react";
+import { useAuth } from "../../contexts/AuthContext";
 import {
   Pressable,
   SafeAreaView,
@@ -14,8 +15,9 @@ export default function Login() {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [error, setError] = useState("");
+    const { signIn } = useAuth();
 
-    const handleLogin = () => {
+    const handleLogin = async () => {
         setError("");
 
         if (!email || !password) {
@@ -28,8 +30,13 @@ export default function Login() {
             return;
         }
 
-        router.replace("/locais");
-        };
+        try {
+            await signIn(email.trim().toLowerCase());
+            router.replace("/locais");
+        } catch {
+            setError("Não foi possível iniciar a sessão.");
+        }
+    };
 
   return (
     <SafeAreaView style={styles.container}>

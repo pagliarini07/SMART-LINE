@@ -1,6 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { useState } from "react";
+import { useAuth } from "../../contexts/AuthContext";
 import {
   Pressable,
   SafeAreaView,
@@ -30,6 +31,8 @@ const USUARIO_MOCK = {
 };
 
 export default function Perfil() {
+  const { signOut } = useAuth();
+
   const [editando, setEditando] = useState(false);
   const [nome, setNome] = useState(USUARIO_MOCK.nome);
   const [email, setEmail] = useState(USUARIO_MOCK.email);
@@ -38,9 +41,13 @@ export default function Perfil() {
     setEditando(false);
   };
 
-  const handleSair = () => {
-    // TODO(T11): substituir por logout real assim que a autenticação existir.
-    router.replace("/login");
+  const handleSair = async () => {
+    try {
+      await signOut();
+      router.replace("/login");
+    } catch (error) {
+      console.error("Erro ao encerrar sessão:", error);
+    }
   };
 
   return (

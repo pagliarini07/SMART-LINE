@@ -1,5 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
-import { router } from "expo-router";
+import { Redirect, router } from "expo-router";
+import { useAuth } from "../contexts/AuthContext";
 import {
   Pressable,
   SafeAreaView,
@@ -21,6 +22,16 @@ const COLORS = {
 };
 
 export default function Index() {
+  const { isAuthenticated, isLoading } = useAuth();
+
+  if (isLoading) {
+    return null;
+  }
+
+  if (isAuthenticated) {
+    return <Redirect href="/locais" />;
+  }
+
   return (
     <SafeAreaView style={styles.screen}>
       <StatusBar barStyle="light-content" backgroundColor={COLORS.blue} />
