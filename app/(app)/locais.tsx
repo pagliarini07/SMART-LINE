@@ -1,5 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { router, Stack } from "expo-router";
+import { useState } from "react";
 import {
   Pressable,
   SafeAreaView,
@@ -31,6 +32,7 @@ type Local = {
   endereco: string;
   distancia: string;
   pessoasAguardando: number;
+  tipo: string;
   icon: keyof typeof Ionicons.glyphMap;
   iconColor: string;
   iconBackground: string;
@@ -43,6 +45,7 @@ const LOCAIS: Local[] = [
     endereco: "Av. JK, 104 Norte, Palmas – TO",
     distancia: "450 m",
     pessoasAguardando: 18,
+    tipo: "servicos",
     icon: "grid-outline",
     iconColor: COLORS.blue,
     iconBackground: COLORS.lightBlue,
@@ -53,6 +56,7 @@ const LOCAIS: Local[] = [
     endereco: "Quadra 104 Norte, Av. LO 2, Nº 30",
     distancia: "850 m",
     pessoasAguardando: 6,
+    tipo: "cartorios",
     icon: "document-text-outline",
     iconColor: "#274A8A",
     iconBackground: COLORS.yellowSoft,
@@ -63,6 +67,7 @@ const LOCAIS: Local[] = [
     endereco: "104 Sul, Av. LO 1, Conj. 01, Lt. 05",
     distancia: "1,2 km",
     pessoasAguardando: 24,
+    tipo: "veiculos",
     icon: "car-outline",
     iconColor: COLORS.blue,
     iconBackground: COLORS.lightBlue,
@@ -75,7 +80,6 @@ const CATEGORIAS = [
     nome: "Cartórios",
     icon: "business-outline" as keyof typeof Ionicons.glyphMap,
     width: 74,
-    active: true,
   },
   {
     id: "servicos",
@@ -98,9 +102,13 @@ const CATEGORIAS = [
 ];
 
 export default function Locais() {
+  const [categoriaAtiva, setCategoriaAtiva] = useState("cartorios");
   const abrirServicos = () => {
     router.push("/servicos" as never);
   };
+  const locaisFiltrados = LOCAIS.filter(
+    (local) => local.tipo === categoriaAtiva
+  );
 
   return (
     <SafeAreaView style={styles.screen}>
@@ -156,10 +164,11 @@ export default function Locais() {
             {CATEGORIAS.map((categoria) => (
               <Pressable
                 key={categoria.id}
+                onPress={() => setCategoriaAtiva(categoria.id)}
                 style={[
                   styles.category,
                   { width: categoria.width },
-                  categoria.active && styles.categoryActive,
+                  categoriaAtiva === categoria.id && styles.categoryActive,
                 ]}
               >
                 <Ionicons
@@ -171,7 +180,7 @@ export default function Locais() {
                 <Text
                   style={[
                     styles.categoryText,
-                    categoria.active && styles.categoryTextActive,
+                    categoriaAtiva === categoria.id && styles.categoryActive,
                   ]}
                   numberOfLines={1}
                 >
@@ -192,7 +201,7 @@ export default function Locais() {
           </View>
 
           <View style={styles.localList}>
-            {LOCAIS.map((local) => (
+            {locaisFiltrados.map((local) => (
               <View key={local.id} style={styles.localCard}>
                 <View
                   style={[
