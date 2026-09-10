@@ -264,14 +264,17 @@ export default function Inicio() {
           <Text style={styles.tabLabel}>Histórico</Text>
         </View>
 
-        <View style={styles.tabItem}>
+        <Pressable
+          style={styles.tabItem}
+          onPress={() => router.push("/perfil")}
+        >
           <Ionicons
             name="person-outline"
             size={22}
             color={COLORS.secondary}
           />
           <Text style={styles.tabLabel}>Perfil</Text>
-        </View>
+        </Pressable>
       </View>
     </SafeAreaView>
   );
