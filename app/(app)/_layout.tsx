@@ -6,6 +6,7 @@ export default function AppLayout() {
       <Stack.Screen name="locais" />
       <Stack.Screen name="servicos" />
       <Stack.Screen name="fila" />
+      <Stack.Screen name="perfil" />
     </Stack>
   );
 }
