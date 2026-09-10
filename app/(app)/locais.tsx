@@ -1,5 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { router, Stack } from "expo-router";
+import { useState } from "react";
 import {
   Pressable,
   SafeAreaView,
@@ -31,6 +32,7 @@ type Local = {
   endereco: string;
   distancia: string;
   pessoasAguardando: number;
+  tipo: string;
   icon: keyof typeof Ionicons.glyphMap;
   iconColor: string;
   iconBackground: string;
@@ -43,6 +45,7 @@ const LOCAIS: Local[] = [
     endereco: "Av. JK, 104 Norte, Palmas – TO",
     distancia: "450 m",
     pessoasAguardando: 18,
+    tipo: "servicos",
     icon: "grid-outline",
     iconColor: COLORS.blue,
     iconBackground: COLORS.lightBlue,
@@ -53,6 +56,7 @@ const LOCAIS: Local[] = [
     endereco: "Quadra 104 Norte, Av. LO 2, Nº 30",
     distancia: "850 m",
     pessoasAguardando: 6,
+    tipo: "cartorios",
     icon: "document-text-outline",
     iconColor: "#274A8A",
     iconBackground: COLORS.yellowSoft,
@@ -63,6 +67,7 @@ const LOCAIS: Local[] = [
     endereco: "104 Sul, Av. LO 1, Conj. 01, Lt. 05",
     distancia: "1,2 km",
     pessoasAguardando: 24,
+    tipo: "veiculos",
     icon: "car-outline",
     iconColor: COLORS.blue,
     iconBackground: COLORS.lightBlue,
@@ -71,11 +76,16 @@ const LOCAIS: Local[] = [
 
 const CATEGORIAS = [
   {
+    id: "todos",
+    nome: "Todos",
+    icon: "apps-outline" as keyof typeof Ionicons.glyphMap,
+    width: 64,
+  },  
+  {
     id: "cartorios",
     nome: "Cartórios",
     icon: "business-outline" as keyof typeof Ionicons.glyphMap,
     width: 74,
-    active: true,
   },
   {
     id: "servicos",
@@ -98,9 +108,33 @@ const CATEGORIAS = [
 ];
 
 export default function Locais() {
+  const [categoriaAtiva, setCategoriaAtiva] = useState("todos");
+  const [busca, setBusca] = useState("");
   const abrirServicos = () => {
     router.push("/servicos" as never);
   };
+  const normalizar = (texto: string) =>
+  texto
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim();
+  const termoBusca = normalizar(busca);  
+  const locaisFiltrados = LOCAIS.filter((local) => {
+    const correspondeCategoria =
+      categoriaAtiva === "todos" ||
+      local.tipo === categoriaAtiva;
+
+    const textoLocal = normalizar(
+      `${local.nome} ${local.endereco}`
+    );
+
+    const correspondeBusca =
+      termoBusca === "" ||
+      textoLocal.includes(termoBusca);
+
+    return correspondeCategoria && correspondeBusca;
+  });
 
   return (
     <SafeAreaView style={styles.screen}>
@@ -149,6 +183,8 @@ export default function Locais() {
               style={styles.searchInput}
               placeholder="Buscar órgão ou cartório"
               placeholderTextColor={COLORS.secondary}
+              value ={busca}
+              onChangeText={setBusca}
             />
           </View>
 
@@ -156,10 +192,11 @@ export default function Locais() {
             {CATEGORIAS.map((categoria) => (
               <Pressable
                 key={categoria.id}
+                onPress={() => setCategoriaAtiva(categoria.id)}
                 style={[
                   styles.category,
                   { width: categoria.width },
-                  categoria.active && styles.categoryActive,
+                  categoriaAtiva === categoria.id && styles.categoryActive,
                 ]}
               >
                 <Ionicons
@@ -171,7 +208,7 @@ export default function Locais() {
                 <Text
                   style={[
                     styles.categoryText,
-                    categoria.active && styles.categoryTextActive,
+                    categoriaAtiva === categoria.id && styles.categoryActive,
                   ]}
                   numberOfLines={1}
                 >
@@ -192,89 +229,109 @@ export default function Locais() {
           </View>
 
           <View style={styles.localList}>
-            {LOCAIS.map((local) => (
-              <View key={local.id} style={styles.localCard}>
-                <View
-                  style={[
-                    styles.localIcon,
-                    { backgroundColor: local.iconBackground },
-                  ]}
-                >
+            {locaisFiltrados.length > 0 ? (
+              locaisFiltrados.map((local) => (
+                <View key={local.id} style={styles.localCard}>
+                  <View
+                    style={[
+                      styles.localIcon,
+                      { backgroundColor: local.iconBackground },
+                    ]}
+                  >
+                    <Ionicons
+                      name={local.icon}
+                      size={30}
+                      color={local.iconColor}
+                    />
+                  </View>
+
+                  <View style={styles.localContent}>
+                    <View style={styles.localTitleRow}>
+                      <Text style={styles.localName} numberOfLines={1}>
+                        {local.nome}
+                      </Text>
+
+                      <Ionicons
+                        name="chevron-forward"
+                        size={18}
+                        color={COLORS.text}
+                      />
+                    </View>
+
+                    <View style={styles.addressRow}>
+                      <Ionicons
+                        name="navigate-outline"
+                        size={12}
+                        color={COLORS.secondary}
+                      />
+
+                      <Text
+                        style={styles.address}
+                        numberOfLines={1}
+                      >
+                        {local.endereco}
+                      </Text>
+
+                      <Text style={styles.distance}>
+                        {local.distancia}
+                      </Text>
+                    </View>
+
+                    <View style={styles.infoRow}>
+                      <View style={styles.openPill}>
+                        <View style={styles.openDot} />
+                        <Text style={styles.openText}>Aberto</Text>
+                      </View>
+
+                      <View style={styles.waitingRow}>
+                        <Ionicons
+                          name="people"
+                          size={14}
+                          color={COLORS.blue}
+                        />
+
+                        <Text style={styles.waitingText}>
+                          {local.pessoasAguardando} pessoas aguardando
+                        </Text>
+                      </View>
+                    </View>
+
+                    <Pressable
+                      style={styles.servicesButton}
+                      onPress={abrirServicos}
+                    >
+                      <Text style={styles.servicesButtonText}>
+                        Ver serviços
+                      </Text>
+
+                      <Ionicons
+                        name="chevron-forward"
+                        size={17}
+                        color={COLORS.blue}
+                      />
+                    </Pressable>
+                  </View>
+                </View>
+              ))
+            ) : (
+              <View style={styles.emptyState}>
+                <View style={styles.emptyIcon}>
                   <Ionicons
-                    name={local.icon}
+                    name="search-outline"
                     size={30}
-                    color={local.iconColor}
+                    color={COLORS.blue}
                   />
                 </View>
 
-                <View style={styles.localContent}>
-                  <View style={styles.localTitleRow}>
-                    <Text style={styles.localName} numberOfLines={1}>
-                      {local.nome}
-                    </Text>
+                <Text style={styles.emptyTitle}>
+                  Nenhum local encontrado
+                </Text>
 
-                    <Ionicons
-                      name="chevron-forward"
-                      size={18}
-                      color={COLORS.text}
-                    />
-                  </View>
-
-                  <View style={styles.addressRow}>
-                    <Ionicons
-                      name="navigate-outline"
-                      size={12}
-                      color={COLORS.secondary}
-                    />
-
-                    <Text
-                      style={styles.address}
-                      numberOfLines={1}
-                    >
-                      {local.endereco}
-                    </Text>
-
-                    <Text style={styles.distance}>
-                      {local.distancia}
-                    </Text>
-                  </View>
-
-                  <View style={styles.infoRow}>
-                    <View style={styles.openPill}>
-                      <View style={styles.openDot} />
-                      <Text style={styles.openText}>Aberto</Text>
-                    </View>
-
-                    <View style={styles.waitingRow}>
-                      <Ionicons
-                        name="people"
-                        size={14}
-                        color={COLORS.blue}
-                      />
-
-                      <Text style={styles.waitingText}>
-                        {local.pessoasAguardando} pessoas aguardando
-                      </Text>
-                    </View>
-                  </View>
-
-                  <Pressable
-                    style={styles.servicesButton}
-                    onPress={abrirServicos}
-                  >
-                    <Text style={styles.servicesButtonText}>
-                      Ver serviços
-                    </Text>
-
-                    <Ionicons
-                      name="chevron-forward"
-                      size={17}
-                      color={COLORS.blue}
-                    />
-                  </Pressable>
-                </View>
+                <Text style={styles.emptyDescription}>
+                  Não encontramos locais para sua busca ou categoria.
+                </Text>
               </View>
-            ))}
+            )}
           </View>
 
           <Pressable style={styles.mapButton}>
@@ -674,4 +731,35 @@ const styles = StyleSheet.create({
     color: COLORS.blue,
     fontWeight: "600",
   },
+  emptyState: {
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 35,
+    paddingHorizontal: 20,
+  },
+
+  emptyIcon: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: COLORS.lightBlue,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 12,
+  },
+
+  emptyTitle: {
+    color: COLORS.text,
+    fontSize: 17,
+    fontWeight: "700",
+    textAlign: "center",
+  },
+
+  emptyDescription: {
+    color: COLORS.secondary,
+    fontSize: 12,
+    textAlign: "center",
+    marginTop: 6,
+    lineHeight: 17,
+  },  
 });
