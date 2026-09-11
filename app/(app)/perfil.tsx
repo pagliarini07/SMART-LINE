@@ -1,7 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { useState } from "react";
-import { useAuth } from "../../contexts/AuthContext";
 import {
   Pressable,
   SafeAreaView,
@@ -11,6 +10,7 @@ import {
   TextInput,
   View,
 } from "react-native";
+import { useAuth } from "../../contexts/AuthContext";
 
 const COLORS = {
   blue: "#0757D8",
@@ -121,19 +121,29 @@ export default function Perfil() {
 
       {/* BARRA INFERIOR */}
       <View style={styles.tabBar}>
-        <View style={styles.tabItem}>
-          <Ionicons name="home-outline" size={22} color={COLORS.secondary} />
+        <Pressable
+          style={styles.tabItem}
+          onPress={() => router.push("/locais")}
+        >
+          <Ionicons
+            name="home-outline"
+            size={22}
+            color={COLORS.secondary}
+          />
           <Text style={styles.tabLabel}>Início</Text>
-        </View>
+        </Pressable> 
 
-        <View style={styles.tabItem}>
+        <Pressable
+          style={styles.tabItem}
+          onPress={() => router.push("/minha-senha")}
+        >
           <Ionicons
             name="ticket-outline"
             size={22}
             color={COLORS.secondary}
           />
           <Text style={styles.tabLabel}>Minha senha</Text>
-        </View>
+        </Pressable>
 
         <View style={styles.tabItem}>
           <Ionicons name="time-outline" size={22} color={COLORS.secondary} />

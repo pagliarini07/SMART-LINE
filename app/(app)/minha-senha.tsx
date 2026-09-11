@@ -116,10 +116,18 @@ export default function MinhaSenha() {
 
       {/* BARRA INFERIOR */}
       <View style={styles.tabBar}>
-        <View style={styles.tabItem}>
-          <Ionicons name="home-outline" size={22} color={COLORS.secondary} />
+
+        <Pressable
+          style={styles.tabItem}
+          onPress={() => router.push("/locais")}
+        >
+          <Ionicons
+            name="home-outline"
+            size={22}
+            color={COLORS.secondary}
+          />
           <Text style={styles.tabLabel}>Início</Text>
-        </View>
+        </Pressable>        
 
         <View style={styles.tabItem}>
           <Ionicons name="ticket" size={22} color={COLORS.blue} />
@@ -133,14 +141,17 @@ export default function MinhaSenha() {
           <Text style={styles.tabLabel}>Histórico</Text>
         </View>
 
-        <View style={styles.tabItem}>
+        <Pressable
+          style={styles.tabItem}
+          onPress={() => router.push("/perfil")}
+        >
           <Ionicons
             name="person-outline"
             size={22}
             color={COLORS.secondary}
           />
           <Text style={styles.tabLabel}>Perfil</Text>
-        </View>
+        </Pressable>
       </View>
     </SafeAreaView>
   );
