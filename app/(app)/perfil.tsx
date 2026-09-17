@@ -1,7 +1,8 @@
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
+  ActivityIndicator,
   Pressable,
   SafeAreaView,
   StatusBar,
@@ -11,6 +12,7 @@ import {
   View,
 } from "react-native";
 import { useAuth } from "../../contexts/AuthContext";
+import { getProfile, saveProfile } from "../../lib/profiles";
 
 const COLORS = {
   blue: "#0757D8",
@@ -23,22 +25,95 @@ const COLORS = {
   borderBlue: "#CFE0FF",
 };
 
-// Dados mocados do usuário logado — trocar por dados reais (API / estado
-// global) quando a autenticação (T11) existir.
-const USUARIO_MOCK = {
-  nome: "Maria Silva",
-  email: "maria.silva@email.com",
-};
+function apenasDigitos(valor: string) {
+  return valor.replace(/\D/g, "");
+}
+
+function formatarCpf(cpf: string) {
+  const digitos = apenasDigitos(cpf);
+
+  if (digitos.length !== 11) {
+    return cpf;
+  }
+
+  return digitos.replace(
+    /(\d{3})(\d{3})(\d{3})(\d{2})/,
+    "$1.$2.$3-$4"
+  );
+}
 
 export default function Perfil() {
-  const { signOut } = useAuth();
+  const { user, signOut } = useAuth();
 
+  const [carregando, setCarregando] = useState(true);
   const [editando, setEditando] = useState(false);
-  const [nome, setNome] = useState(USUARIO_MOCK.nome);
-  const [email, setEmail] = useState(USUARIO_MOCK.email);
+  const [salvando, setSalvando] = useState(false);
+  const [erro, setErro] = useState("");
 
-  const handleSalvar = () => {
-    setEditando(false);
+  const [nome, setNome] = useState("");
+  const [email, setEmail] = useState("");
+  const [cpf, setCpf] = useState("");
+
+  useEffect(() => {
+    async function carregarPerfil() {
+      if (!user) {
+        setCarregando(false);
+        return;
+      }
+
+      try {
+        const perfil = await getProfile(user.id);
+
+        setNome(perfil?.nome ?? "");
+        setEmail(perfil?.email ?? user.email ?? "");
+        setCpf(perfil?.cpf ?? "");
+      } catch {
+        setErro("Não foi possível carregar seus dados agora.");
+        setEmail(user.email ?? "");
+      } finally {
+        setCarregando(false);
+      }
+    }
+
+    carregarPerfil();
+  }, [user]);
+
+  const handleSalvar = async () => {
+    if (!user) {
+      return;
+    }
+
+    setErro("");
+
+    if (!nome.trim()) {
+      setErro("Digite seu nome.");
+      return;
+    }
+
+    if (!email.includes("@")) {
+      setErro("Digite um e-mail válido.");
+      return;
+    }
+
+    if (cpf && apenasDigitos(cpf).length !== 11) {
+      setErro("Digite um CPF válido (11 dígitos).");
+      return;
+    }
+
+    setSalvando(true);
+
+    try {
+      await saveProfile(user.id, {
+        nome: nome.trim(),
+        email: email.trim(),
+        cpf: apenasDigitos(cpf),
+      });
+      setEditando(false);
+    } catch {
+      setErro("Não foi possível salvar seus dados agora.");
+    } finally {
+      setSalvando(false);
+    }
   };
 
   const handleSair = async () => {
@@ -68,14 +143,25 @@ export default function Perfil() {
             <Ionicons name="person" size={40} color={COLORS.blue} />
           </View>
 
-          {!editando ? (
+          {carregando ? (
+            <ActivityIndicator
+              style={styles.loading}
+              color={COLORS.blue}
+            />
+          ) : !editando ? (
             <>
-              <Text style={styles.nome}>{nome}</Text>
+              <Text style={styles.nome}>{nome || "Sem nome cadastrado"}</Text>
               <Text style={styles.email}>{email}</Text>
+              {cpf ? (
+                <Text style={styles.email}>CPF: {formatarCpf(cpf)}</Text>
+              ) : null}
 
               <Pressable
                 style={styles.editButton}
-                onPress={() => setEditando(true)}
+                onPress={() => {
+                  setErro("");
+                  setEditando(true);
+                }}
               >
                 <Ionicons
                   name="create-outline"
@@ -105,11 +191,35 @@ export default function Perfil() {
                 onChangeText={setEmail}
               />
 
-              <Pressable style={styles.saveButton} onPress={handleSalvar}>
-                <Text style={styles.saveButtonText}>Salvar</Text>
+              <Text style={styles.label}>CPF</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="Digite seu CPF"
+                keyboardType="numeric"
+                maxLength={11}
+                value={cpf}
+                onChangeText={(valor) => setCpf(apenasDigitos(valor))}
+              />
+
+              {erro ? <Text style={styles.errorText}>{erro}</Text> : null}
+
+              <Pressable
+                style={[styles.saveButton, salvando && styles.saveButtonDisabled]}
+                onPress={handleSalvar}
+                disabled={salvando}
+              >
+                {salvando ? (
+                  <ActivityIndicator color={COLORS.white} />
+                ) : (
+                  <Text style={styles.saveButtonText}>Salvar</Text>
+                )}
               </Pressable>
             </View>
           )}
+
+          {erro && !editando ? (
+            <Text style={styles.errorText}>{erro}</Text>
+          ) : null}
         </View>
 
         {/* SAIR */}
@@ -131,7 +241,7 @@ export default function Perfil() {
             color={COLORS.secondary}
           />
           <Text style={styles.tabLabel}>Início</Text>
-        </Pressable> 
+        </Pressable>
 
         <Pressable
           style={styles.tabItem}
@@ -221,6 +331,10 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
 
+  loading: {
+    marginTop: 16,
+  },
+
   nome: {
     color: COLORS.text,
     fontSize: 19,
@@ -285,10 +399,21 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
 
+  saveButtonDisabled: {
+    opacity: 0.7,
+  },
+
   saveButtonText: {
     color: COLORS.white,
     fontSize: 14,
     fontWeight: "700",
+  },
+
+  errorText: {
+    color: "#D32F2F",
+    fontSize: 12.5,
+    marginBottom: 12,
+    alignSelf: "flex-start",
   },
 
   logoutButton: {
