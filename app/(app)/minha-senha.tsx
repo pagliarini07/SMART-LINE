@@ -136,10 +136,13 @@ export default function MinhaSenha() {
           </Text>
         </View>
 
-        <View style={styles.tabItem}>
+        <Pressable
+          style={styles.tabItem}
+          onPress={() => router.push("/historico")}
+        >
           <Ionicons name="time-outline" size={22} color={COLORS.secondary} />
           <Text style={styles.tabLabel}>Histórico</Text>
-        </View>
+        </Pressable>
 
         <Pressable
           style={styles.tabItem}

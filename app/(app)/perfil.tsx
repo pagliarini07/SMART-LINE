@@ -145,10 +145,13 @@ export default function Perfil() {
           <Text style={styles.tabLabel}>Minha senha</Text>
         </Pressable>
 
-        <View style={styles.tabItem}>
+        <Pressable
+          style={styles.tabItem}
+          onPress={() => router.push("/historico")}
+        >
           <Ionicons name="time-outline" size={22} color={COLORS.secondary} />
           <Text style={styles.tabLabel}>Histórico</Text>
-        </View>
+        </Pressable>
 
         <View style={styles.tabItem}>
           <Ionicons name="person" size={22} color={COLORS.blue} />

@@ -19,6 +19,7 @@ export default function AppLayout() {
       <Stack.Screen name="fila" />
       <Stack.Screen name="minha-senha" />
       <Stack.Screen name="perfil" />
+      <Stack.Screen name="historico" />
     </Stack>
   );
 }
