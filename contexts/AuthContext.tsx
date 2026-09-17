@@ -1,4 +1,4 @@
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import type { User } from "@supabase/supabase-js";
 import {
   createContext,
   ReactNode,
@@ -6,24 +6,19 @@ import {
   useEffect,
   useState,
 } from "react";
-
-type User = {
-  email: string;
-};
+import { supabase } from "../lib/supabase";
 
 type AuthContextData = {
   user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  signIn: (email: string) => Promise<void>;
+  signIn: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
 };
 
 type AuthProviderProps = {
   children: ReactNode;
 };
-
-const STORAGE_KEY = "@smartline:session";
 
 const AuthContext = createContext<AuthContextData | undefined>(undefined);
 
@@ -32,40 +27,47 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    async function loadSession() {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      setUser(session?.user ?? null);
+      setIsLoading(false);
+    }
+
     loadSession();
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        setUser(session?.user ?? null);
+      }
+    );
+
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
 
-  async function loadSession() {
-    try {
-      const storedSession = await AsyncStorage.getItem(STORAGE_KEY);
+  async function signIn(email: string, password: string) {
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
 
-      if (storedSession) {
-        const session: User = JSON.parse(storedSession);
-        setUser(session);
-      }
-    } catch (error) {
-      console.error("Erro ao carregar sessão:", error);
-    } finally {
-      setIsLoading(false);
+    if (error) {
+      throw error;
     }
   }
 
-  async function signIn(email: string) {
-    const session: User = {
-      email,
-    };
-
-    await AsyncStorage.setItem(
-      STORAGE_KEY,
-      JSON.stringify(session)
-    );
-
-    setUser(session);
-  }
-
   async function signOut() {
-    await AsyncStorage.removeItem(STORAGE_KEY);
-    setUser(null);
+    const { error } = await supabase.auth.signOut();
+
+    if (error) {
+      throw error;
+    }
   }
 
   return (

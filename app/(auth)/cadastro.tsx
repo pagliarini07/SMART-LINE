@@ -9,6 +9,7 @@ import {
   TextInput,
   View,
 } from "react-native";
+import { supabase } from "../../lib/supabase";
 
 export default function Cadastro() {
   const [nome, setNome] = useState("");
@@ -17,7 +18,7 @@ export default function Cadastro() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
 
-  const handleCadastro = () => {
+  const handleCadastro = async () => {
     setError("");
 
     if (!nome || !email || !password || !confirmPassword) {
@@ -40,7 +41,22 @@ export default function Cadastro() {
         return;
     }
 
-    router.replace("/login");;
+  const { error } = await supabase.auth.signUp({
+    email,
+    password,
+    options: {
+      data: {
+        nome,
+      },
+    },
+  });
+
+  if (error) {
+    setError(error.message);
+    return;
+  }
+
+  router.replace("/login");
   };
 
   return (
