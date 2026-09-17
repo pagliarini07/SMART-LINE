@@ -1,7 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { useState } from "react";
-import { useAuth } from "../../contexts/AuthContext";
 import {
   Pressable,
   SafeAreaView,
@@ -10,6 +9,7 @@ import {
   TextInput,
   View,
 } from "react-native";
+import { useAuth } from "../../contexts/AuthContext";
 
 export default function Login() {
     const [email, setEmail] = useState("");
@@ -31,10 +31,14 @@ export default function Login() {
         }
 
         try {
-            await signIn(email.trim().toLowerCase());
+            await signIn(email.trim().toLowerCase(), password);
             router.replace("/locais");
-        } catch {
-            setError("Não foi possível iniciar a sessão.");
+        } catch (error) {
+            if (error instanceof Error) {
+                setError(error.message);
+            } else {
+                setError("Não foi possível iniciar a sessão.");
+            }
         }
     };
 
