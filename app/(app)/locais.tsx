@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { router, Stack } from "expo-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Pressable,
   SafeAreaView,
@@ -11,6 +11,8 @@ import {
   TextInput,
   View,
 } from "react-native";
+import { useAuth } from "../../contexts/AuthContext";
+import { fetchLocais } from "../../lib/catalog";
 
 const COLORS = {
   blue: "#0757D8",
@@ -108,10 +110,39 @@ const CATEGORIAS = [
 ];
 
 export default function Locais() {
+  const { user } = useAuth();
   const [categoriaAtiva, setCategoriaAtiva] = useState("todos");
   const [busca, setBusca] = useState("");
-  const abrirServicos = () => {
-    router.push("/servicos" as never);
+  const [locais, setLocais] = useState<Local[]>(LOCAIS);
+  const primeiroNome =
+    (typeof user?.user_metadata?.nome === "string" &&
+      user.user_metadata.nome.split(" ")[0]) ||
+    user?.email?.split("@")[0] ||
+    "olá";
+
+  useEffect(() => {
+    let ativo = true;
+
+    fetchLocais()
+      .then((lista) => {
+        if (ativo && lista.length > 0) {
+          setLocais(lista);
+        }
+      })
+      .catch(() => {
+        // Mantém a lista local se o banco ainda não estiver pronto.
+      });
+
+    return () => {
+      ativo = false;
+    };
+  }, []);
+
+  const abrirServicos = (localId: string) => {
+    router.push({
+      pathname: "/servicos",
+      params: { localId },
+    } as never);
   };
   const normalizar = (texto: string) =>
   texto
@@ -120,7 +151,7 @@ export default function Locais() {
     .toLowerCase()
     .trim();
   const termoBusca = normalizar(busca);  
-  const locaisFiltrados = LOCAIS.filter((local) => {
+  const locaisFiltrados = locais.filter((local) => {
     const correspondeCategoria =
       categoriaAtiva === "todos" ||
       local.tipo === categoriaAtiva;
@@ -163,7 +194,7 @@ export default function Locais() {
           </View>
         </View>
 
-        <Text style={styles.hello}>Olá, Lucas!</Text>
+        <Text style={styles.hello}>Olá, {primeiroNome}!</Text>
         <Text style={styles.help}>Como podemos te ajudar hoje?</Text>
       </View>
 
@@ -298,7 +329,7 @@ export default function Locais() {
 
                     <Pressable
                       style={styles.servicesButton}
-                      onPress={abrirServicos}
+                      onPress={() => abrirServicos(local.id)}
                     >
                       <Text style={styles.servicesButtonText}>
                         Ver serviços

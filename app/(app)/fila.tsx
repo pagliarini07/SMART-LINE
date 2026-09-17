@@ -30,9 +30,16 @@ const SERVICOS_NOMES: Record<string, string> = {
 };
 
 export default function Fila() {
-  const { servicoId } = useLocalSearchParams<{ servicoId?: string }>();
+  const { servicoId, servicoNome } = useLocalSearchParams<{
+    servicoId?: string;
+    servicoNome?: string;
+  }>();
+  const nomeParam = Array.isArray(servicoNome) ? servicoNome[0] : servicoNome;
+  const idParam = Array.isArray(servicoId) ? servicoId[0] : servicoId;
   const nomeServico =
-    (servicoId && SERVICOS_NOMES[servicoId]) || "Serviço selecionado";
+    nomeParam ||
+    (idParam && SERVICOS_NOMES[idParam]) ||
+    "Serviço selecionado";
 
   return (
     <SafeAreaView style={styles.screen}>

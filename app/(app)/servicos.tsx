@@ -1,5 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
-import { router } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
+import { useEffect, useState } from "react";
 import {
   Pressable,
   SafeAreaView,
@@ -9,6 +10,7 @@ import {
   Text,
   View,
 } from "react-native";
+import { fetchLocalEServicos } from "../../lib/catalog";
 
 const COLORS = {
   blue: "#0757D8",
@@ -85,6 +87,39 @@ const SERVICOS: Servico[] = [
 ];
 
 export default function Inicio() {
+  const { localId } = useLocalSearchParams<{ localId?: string }>();
+  const localSelecionado = Array.isArray(localId) ? localId[0] : localId;
+  const [unidade, setUnidade] = useState(UNIDADE);
+  const [servicos, setServicos] = useState<Servico[]>(SERVICOS);
+
+  useEffect(() => {
+    if (!localSelecionado) {
+      return;
+    }
+
+    let ativo = true;
+    fetchLocalEServicos(localSelecionado)
+      .then((data) => {
+        if (!ativo || !data) {
+          return;
+        }
+        setUnidade({
+          nome: data.unidade.nome,
+          endereco: data.unidade.endereco,
+          aberto: data.unidade.aberto,
+          pessoasAguardando: data.unidade.pessoasAguardando,
+        });
+        setServicos(data.servicos);
+      })
+      .catch(() => {
+        // Mantém os mocks se o banco ainda não estiver pronto.
+      });
+
+    return () => {
+      ativo = false;
+    };
+  }, [localSelecionado]);
+
   return (
     <SafeAreaView style={styles.screen}>
       <StatusBar barStyle="light-content" backgroundColor={COLORS.blue} />
@@ -129,7 +164,7 @@ export default function Inicio() {
           </View>
 
           <View style={styles.unitInfo}>
-            <Text style={styles.unitName}>{UNIDADE.nome}</Text>
+            <Text style={styles.unitName}>{unidade.nome}</Text>
 
             <View style={styles.unitAddressRow}>
               <Ionicons
@@ -137,20 +172,20 @@ export default function Inicio() {
                 size={12}
                 color={COLORS.secondary}
               />
-              <Text style={styles.unitAddress}>{UNIDADE.endereco}</Text>
+              <Text style={styles.unitAddress}>{unidade.endereco}</Text>
             </View>
 
             <View style={styles.statusPill}>
               <View style={styles.statusDot} />
               <Text style={styles.statusText}>
-                {UNIDADE.aberto ? "Aberto" : "Fechado"}
+                {unidade.aberto ? "Aberto" : "Fechado"}
               </Text>
             </View>
           </View>
 
           <View style={styles.unitWaiting}>
             <Text style={styles.unitWaitingNumber}>
-              {UNIDADE.pessoasAguardando}
+              {unidade.pessoasAguardando}
             </Text>
             <Text style={styles.unitWaitingLabel}>
               pessoas{"\n"}aguardando
@@ -168,7 +203,7 @@ export default function Inicio() {
 
         {/* LISTA DE SERVIÇOS */}
         <View style={styles.serviceList}>
-          {SERVICOS.map((servico) => (
+          {servicos.map((servico) => (
             <View key={servico.id} style={styles.serviceCard}>
               <View
                 style={[
@@ -215,7 +250,10 @@ export default function Inicio() {
                 onPress={() =>
                   router.push({
                     pathname: "/fila",
-                    params: { servicoId: servico.id },
+                    params: {
+                      servicoId: servico.id,
+                      servicoNome: servico.titulo,
+                    },
                   } as never)
                 }
               >

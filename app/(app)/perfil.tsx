@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Pressable,
   SafeAreaView,
@@ -11,6 +11,7 @@ import {
   View,
 } from "react-native";
 import { useAuth } from "../../contexts/AuthContext";
+import { supabase } from "../../lib/supabase";
 
 const COLORS = {
   blue: "#0757D8",
@@ -23,22 +24,75 @@ const COLORS = {
   borderBlue: "#CFE0FF",
 };
 
-// Dados mocados do usuário logado — trocar por dados reais (API / estado
-// global) quando a autenticação (T11) existir.
-const USUARIO_MOCK = {
-  nome: "Maria Silva",
-  email: "maria.silva@email.com",
-};
+function nomeDoUsuario(user: {
+  email?: string;
+  user_metadata?: { nome?: string };
+} | null) {
+  return user?.user_metadata?.nome || user?.email?.split("@")[0] || "";
+}
 
 export default function Perfil() {
-  const { signOut } = useAuth();
+  const { signOut, user } = useAuth();
 
   const [editando, setEditando] = useState(false);
-  const [nome, setNome] = useState(USUARIO_MOCK.nome);
-  const [email, setEmail] = useState(USUARIO_MOCK.email);
+  const [nome, setNome] = useState(nomeDoUsuario(user));
+  const [email, setEmail] = useState(user?.email ?? "");
+  const [erro, setErro] = useState("");
 
-  const handleSalvar = () => {
-    setEditando(false);
+  useEffect(() => {
+    if (!user) {
+      return;
+    }
+
+    let ativo = true;
+    setEmail(user.email ?? "");
+    setNome(nomeDoUsuario(user));
+
+    supabase
+      .from("usuarios")
+      .select("nome, email")
+      .eq("id", user.id)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (!ativo || !data) {
+          return;
+        }
+        setNome(data.nome);
+        setEmail(data.email);
+      });
+
+    return () => {
+      ativo = false;
+    };
+  }, [user]);
+
+  const handleSalvar = async () => {
+    setErro("");
+    if (!user) {
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from("usuarios")
+        .update({
+          nome: nome.trim(),
+          email: email.trim().toLowerCase(),
+        })
+        .eq("id", user.id);
+
+      if (error) {
+        throw error;
+      }
+
+      await supabase.auth.updateUser({
+        data: { nome: nome.trim() },
+      });
+
+      setEditando(false);
+    } catch {
+      setErro("Não foi possível salvar os dados.");
+    }
   };
 
   const handleSair = async () => {
@@ -104,6 +158,12 @@ export default function Perfil() {
                 value={email}
                 onChangeText={setEmail}
               />
+
+              {erro ? (
+                <Text style={{ color: "#D32F2F", marginBottom: 10 }}>
+                  {erro}
+                </Text>
+              ) : null}
 
               <Pressable style={styles.saveButton} onPress={handleSalvar}>
                 <Text style={styles.saveButtonText}>Salvar</Text>
