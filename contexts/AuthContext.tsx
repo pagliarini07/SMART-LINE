@@ -28,12 +28,18 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   useEffect(() => {
     async function loadSession() {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
+      try {
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
 
-      setUser(session?.user ?? null);
-      setIsLoading(false);
+        setUser(session?.user ?? null);
+      } catch (error) {
+        console.error("Erro ao carregar sessão:", error);
+        setUser(null);
+      } finally {
+        setIsLoading(false);
+      }
     }
 
     loadSession();
