@@ -146,6 +146,18 @@ export default function MinhaSenha() {
 
         <Pressable
           style={styles.tabItem}
+          onPress={() => router.push("/conquistas")}
+        >
+          <Ionicons
+            name="trophy-outline"
+            size={22}
+            color={COLORS.secondary}
+          />
+          <Text style={styles.tabLabel}>Conquistas</Text>
+        </Pressable>
+
+        <Pressable
+          style={styles.tabItem}
           onPress={() => router.push("/perfil")}
         >
           <Ionicons

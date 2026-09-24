@@ -263,6 +263,18 @@ export default function Perfil() {
           <Text style={styles.tabLabel}>Histórico</Text>
         </Pressable>
 
+        <Pressable
+          style={styles.tabItem}
+          onPress={() => router.push("/conquistas")}
+        >
+          <Ionicons
+            name="trophy-outline"
+            size={22}
+            color={COLORS.secondary}
+          />
+          <Text style={styles.tabLabel}>Conquistas</Text>
+        </Pressable>
+
         <View style={styles.tabItem}>
           <Ionicons name="person" size={22} color={COLORS.blue} />
           <Text style={[styles.tabLabel, styles.tabLabelActive]}>Perfil</Text>
