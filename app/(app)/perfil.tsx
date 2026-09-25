@@ -12,6 +12,11 @@ import {
   View,
 } from "react-native";
 import { useAuth } from "../../contexts/AuthContext";
+import {
+  calcularPercentual,
+  formatarPontos,
+  RESUMO_NIVEL,
+} from "../../lib/niveis";
 import { getProfile, saveProfile } from "../../lib/profiles";
 
 const COLORS = {
@@ -41,6 +46,11 @@ function formatarCpf(cpf: string) {
     "$1.$2.$3-$4"
   );
 }
+
+const progressoNivel = calcularPercentual(
+  RESUMO_NIVEL.pontosNivelAtual,
+  RESUMO_NIVEL.pontosProximoNivel
+);
 
 export default function Perfil() {
   const { user, signOut } = useAuth();
@@ -220,6 +230,46 @@ export default function Perfil() {
           {erro && !editando ? (
             <Text style={styles.errorText}>{erro}</Text>
           ) : null}
+        </View>
+
+        {/* NÍVEL / PROGRESSO */}
+        <View style={styles.levelCard}>
+          <View style={styles.levelIconWrap}>
+            <Ionicons name="trophy" size={20} color={COLORS.yellow} />
+          </View>
+
+          <View style={styles.levelInfo}>
+            <Text style={styles.levelTitle}>
+              Nível {RESUMO_NIVEL.nivelAtual} • {RESUMO_NIVEL.nomeNivel}
+            </Text>
+            <Text style={styles.levelSubtitle}>
+              Faltam{" "}
+              {formatarPontos(
+                RESUMO_NIVEL.pontosProximoNivel - RESUMO_NIVEL.pontosNivelAtual
+              )}{" "}
+              pontos para o nível {RESUMO_NIVEL.nivelAtual + 1}
+            </Text>
+
+            <View style={styles.levelProgressTrack}>
+              <View
+                style={[
+                  styles.levelProgressFill,
+                  { width: `${progressoNivel}%` },
+                ]}
+              />
+            </View>
+
+            <View style={styles.levelFooterRow}>
+              <Text style={styles.levelProgressText}>
+                {formatarPontos(RESUMO_NIVEL.pontosNivelAtual)} /{" "}
+                {formatarPontos(RESUMO_NIVEL.pontosProximoNivel)} pts
+              </Text>
+
+              <Pressable onPress={() => router.push("/conquistas")}>
+                <Text style={styles.levelLink}>Ver conquistas</Text>
+              </Pressable>
+            </View>
+          </View>
         </View>
 
         {/* SAIR */}
@@ -426,6 +476,77 @@ const styles = StyleSheet.create({
     fontSize: 12.5,
     marginBottom: 12,
     alignSelf: "flex-start",
+  },
+
+  levelCard: {
+    marginTop: 14,
+    backgroundColor: COLORS.white,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: "#E8EDF7",
+    padding: 14,
+    flexDirection: "row",
+    alignItems: "flex-start",
+  },
+
+  levelIconWrap: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: "#FFF2CC",
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 12,
+    marginTop: 2,
+  },
+
+  levelInfo: {
+    flex: 1,
+  },
+
+  levelTitle: {
+    color: COLORS.text,
+    fontSize: 14,
+    fontWeight: "700",
+  },
+
+  levelSubtitle: {
+    color: COLORS.secondary,
+    fontSize: 12,
+    marginTop: 3,
+  },
+
+  levelProgressTrack: {
+    marginTop: 10,
+    height: 8,
+    borderRadius: 999,
+    backgroundColor: "#E9EEF7",
+    overflow: "hidden",
+  },
+
+  levelProgressFill: {
+    height: "100%",
+    borderRadius: 999,
+    backgroundColor: COLORS.blue,
+  },
+
+  levelFooterRow: {
+    marginTop: 6,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+
+  levelProgressText: {
+    color: COLORS.secondary,
+    fontSize: 11,
+    fontWeight: "600",
+  },
+
+  levelLink: {
+    color: COLORS.blue,
+    fontSize: 12,
+    fontWeight: "700",
   },
 
   logoutButton: {

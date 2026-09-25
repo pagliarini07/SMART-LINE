@@ -10,6 +10,11 @@ import {
   Text,
   View,
 } from "react-native";
+import {
+  calcularPercentual,
+  formatarPontos,
+  RESUMO_NIVEL,
+} from "../../lib/niveis";
 
 const COLORS = {
   blue: "#0757D8",
@@ -45,12 +50,7 @@ type Conquista = {
 
 const RESUMO = {
   totalConquistas: 7,
-  pontos: 1450,
   percentualConcluido: 42,
-  nivelAtual: 6,
-  nomeNivel: "Cidadão Ativo",
-  pontosNivelAtual: 1450,
-  pontosProximoNivel: 2000,
 };
 
 const FILTROS: { id: FiltroId; nome: string }[] = [
@@ -148,12 +148,6 @@ const CONQUISTAS: Conquista[] = [
   },
 ];
 
-const formatarPontos = (valor: number) =>
-  valor.toLocaleString("pt-BR", { maximumFractionDigits: 0 });
-
-const calcularPercentual = (atual: number, necessario: number) =>
-  Math.min((atual / necessario) * 100, 100);
-
 export default function Conquistas() {
   const [filtroAtivo, setFiltroAtivo] = useState<FiltroId>("todas");
 
@@ -172,8 +166,8 @@ export default function Conquistas() {
   }, [filtroAtivo]);
 
   const progressoNivel = calcularPercentual(
-    RESUMO.pontosNivelAtual,
-    RESUMO.pontosProximoNivel,
+    RESUMO_NIVEL.pontosNivelAtual,
+    RESUMO_NIVEL.pontosProximoNivel,
   );
 
   return (
@@ -201,7 +195,7 @@ export default function Conquistas() {
             </View>
 
             <View style={styles.statCard}>
-              <Text style={styles.statValue}>{formatarPontos(RESUMO.pontos)}</Text>
+              <Text style={styles.statValue}>{formatarPontos(RESUMO_NIVEL.pontosNivelAtual)}</Text>
               <Text style={styles.statLabel}>pontos</Text>
             </View>
 
@@ -225,11 +219,14 @@ export default function Conquistas() {
 
           <View style={styles.levelInfo}>
             <Text style={styles.levelTitle}>
-              Nível {RESUMO.nivelAtual} • {RESUMO.nomeNivel}
+              Nível {RESUMO_NIVEL.nivelAtual} • {RESUMO_NIVEL.nomeNivel}
             </Text>
             <Text style={styles.levelSubtitle}>
-              Faltam {formatarPontos(RESUMO.pontosProximoNivel - RESUMO.pontosNivelAtual)} pontos
-              para o nível {RESUMO.nivelAtual + 1}
+              Faltam{" "}
+              {formatarPontos(
+                RESUMO_NIVEL.pontosProximoNivel - RESUMO_NIVEL.pontosNivelAtual
+              )}{" "}
+              pontos para o nível {RESUMO_NIVEL.nivelAtual + 1}
             </Text>
 
             <View style={styles.levelProgressTrack}>
@@ -237,7 +234,8 @@ export default function Conquistas() {
             </View>
 
             <Text style={styles.levelProgressText}>
-              {formatarPontos(RESUMO.pontosNivelAtual)} / {formatarPontos(RESUMO.pontosProximoNivel)} pts
+              {formatarPontos(RESUMO_NIVEL.pontosNivelAtual)} /{" "}
+              {formatarPontos(RESUMO_NIVEL.pontosProximoNivel)} pts
             </Text>
           </View>
         </View>
