@@ -40,7 +40,7 @@ type Local = {
 
 const LOCAIS: Local[] = [
   {
-    id: "resolve",
+    id: "22222222-2222-2222-2222-222222222001",
     nome: "Resolve Palmas — Centro",
     endereco: "Av. JK, 104 Norte, Palmas – TO",
     distancia: "450 m",
@@ -51,7 +51,7 @@ const LOCAIS: Local[] = [
     iconBackground: COLORS.lightBlue,
   },
   {
-    id: "cartorio",
+    id: "22222222-2222-2222-2222-222222222002",
     nome: "Cartório 2º Ofício",
     endereco: "Quadra 104 Norte, Av. LO 2, Nº 30",
     distancia: "850 m",
@@ -62,7 +62,7 @@ const LOCAIS: Local[] = [
     iconBackground: COLORS.yellowSoft,
   },
   {
-    id: "detran",
+    id: "22222222-2222-2222-2222-222222222003",
     nome: "Detran Palmas",
     endereco: "104 Sul, Av. LO 1, Conj. 01, Lt. 05",
     distancia: "1,2 km",
@@ -112,6 +112,9 @@ export default function Locais() {
   const [busca, setBusca] = useState("");
   const abrirServicos = () => {
     router.push("/servicos" as never);
+  };
+  const abrirAvaliacao = (localId: string) => {
+    router.push(`/avaliar/${localId}` as never);
   };
   const normalizar = (texto: string) =>
   texto
@@ -310,6 +313,22 @@ export default function Locais() {
                         color={COLORS.blue}
                       />
                     </Pressable>
+
+                    <Pressable
+                      style={styles.ratingButton}
+                      onPress={() => abrirAvaliacao(local.id)}
+                    >
+                      <Ionicons
+                        name="star-outline"
+                        size={16}
+                        color={COLORS.yellow}
+                      />
+
+                      <Text style={styles.ratingButtonText}>
+                        Avaliar local
+                      </Text>
+                    </Pressable>
+
                   </View>
                 </View>
               ))
@@ -700,6 +719,25 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     textAlign: "center",
     marginLeft: 17,
+  },
+
+  ratingButton: {
+    height: 28,
+    borderRadius: 15,
+    borderWidth: 1,
+    borderColor: COLORS.yellow,
+    backgroundColor: COLORS.yellowSoft,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 5,
+  },
+
+  ratingButtonText: {
+    color: COLORS.text,
+    fontSize: 13,
+    fontWeight: "600",
+    marginLeft: 5,
   },
 
   mapButton: {
