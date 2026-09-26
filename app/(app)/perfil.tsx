@@ -272,6 +272,36 @@ export default function Perfil() {
           </View>
         </View>
 
+        {/* MINHAS AVALIAÇÕES */}
+        <Pressable
+          style={styles.ratingButton}
+          onPress={() => router.push("/minhas-avaliacoes")}
+        >
+          <View style={styles.ratingIconWrap}>
+            <Ionicons
+              name="star-outline"
+              size={20}
+              color={COLORS.yellow}
+            />
+          </View>
+
+          <View style={styles.ratingInfo}>
+            <Text style={styles.ratingTitle}>
+              Minhas avaliações
+            </Text>
+
+            <Text style={styles.ratingSubtitle}>
+              Consulte e edite suas avaliações
+            </Text>
+          </View>
+
+          <Ionicons
+            name="chevron-forward"
+            size={20}
+            color={COLORS.secondary}
+          />
+        </Pressable>
+
         {/* SAIR */}
         <Pressable style={styles.logoutButton} onPress={handleSair}>
           <Ionicons name="log-out-outline" size={18} color="#D32F2F" />
@@ -547,6 +577,43 @@ const styles = StyleSheet.create({
     color: COLORS.blue,
     fontSize: 12,
     fontWeight: "700",
+  },
+
+  ratingButton: {
+    marginTop: 14,
+    backgroundColor: COLORS.white,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: "#E8EDF7",
+    padding: 14,
+    flexDirection: "row",
+    alignItems: "center",
+  },
+
+  ratingIconWrap: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: "#FFF2CC",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  ratingInfo: {
+    flex: 1,
+    marginLeft: 12,
+  },
+
+  ratingTitle: {
+    color: COLORS.text,
+    fontSize: 14,
+    fontWeight: "700",
+  },
+
+  ratingSubtitle: {
+    color: COLORS.secondary,
+    fontSize: 12,
+    marginTop: 3,
   },
 
   logoutButton: {
