@@ -191,7 +191,12 @@ export default function Locais() {
             />
           </View>
 
-          <View style={styles.categories}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={styles.categoriesScroll}
+            contentContainerStyle={styles.categories}
+          >
             {CATEGORIAS.map((categoria) => (
               <Pressable
                 key={categoria.id}
@@ -211,7 +216,8 @@ export default function Locais() {
                 <Text
                   style={[
                     styles.categoryText,
-                    categoriaAtiva === categoria.id && styles.categoryActive,
+                    categoriaAtiva === categoria.id &&
+                      styles.categoryTextActive,
                   ]}
                   numberOfLines={1}
                 >
@@ -219,17 +225,36 @@ export default function Locais() {
                 </Text>
               </Pressable>
             ))}
-          </View>
+          </ScrollView>
 
-          <View style={styles.sectionTitleRow}>
-            <Ionicons
-              name="locate-outline"
-              size={21}
-              color={COLORS.blue}
-            />
+            <View style={styles.sectionTitleRow}>
+              <View style={styles.sectionTitleLeft}>
+                <Ionicons
+                  name="locate-outline"
+                  size={21}
+                  color={COLORS.blue}
+                />
 
-            <Text style={styles.sectionTitle}>Locais próximos</Text>
-          </View>
+                <Text style={styles.sectionTitle}>
+                  Locais disponíveis
+                </Text>
+              </View>
+
+              <Pressable
+                style={styles.rankingButton}
+                onPress={() => router.push("/ranking")}
+              >
+                <Ionicons
+                  name="trophy-outline"
+                  size={15}
+                  color={COLORS.blue}
+                />
+
+                <Text style={styles.rankingButtonText}>
+                  Ranking
+                </Text>
+              </Pressable>
+            </View>
 
           <View style={styles.localList}>
             {locaisFiltrados.length > 0 ? (
@@ -538,10 +563,13 @@ const styles = StyleSheet.create({
     outlineStyle: "none" as never,
   },
 
+  categoriesScroll: {
+    marginTop: 16,
+  },
+
   categories: {
     flexDirection: "row",
-    justifyContent: "space-between",
-    marginTop: 16,
+    paddingRight: 8,
   },
 
   category: {
@@ -581,8 +609,35 @@ const styles = StyleSheet.create({
   sectionTitleRow: {
     flexDirection: "row",
     alignItems: "center",
+    justifyContent: "space-between",
     marginTop: 18,
     marginBottom: 15,
+  },
+
+  sectionTitleLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    flex: 1,
+  },
+
+  rankingButton: {
+    height: 32,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: COLORS.blue,
+    backgroundColor: COLORS.lightBlue,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 10,
+    marginLeft: 8,
+  },
+
+  rankingButtonText: {
+    color: COLORS.blue,
+    fontSize: 12,
+    fontWeight: "700",
+    marginLeft: 4,
   },
 
   sectionTitle: {
