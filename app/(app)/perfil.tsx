@@ -18,6 +18,10 @@ import {
   RESUMO_NIVEL,
 } from "../../lib/niveis";
 import { getProfile, saveProfile } from "../../lib/profiles";
+import {
+  getSequenciaAtendimentos,
+  type DadosSequencia,
+} from "../../lib/sequencia";
 
 const COLORS = {
   blue: "#0757D8",
@@ -64,6 +68,16 @@ export default function Perfil() {
   const [email, setEmail] = useState("");
   const [cpf, setCpf] = useState("");
 
+  const [dadosSequencia, setDadosSequencia] =
+    useState<DadosSequencia>({
+      atual: 0,
+      recorde: 0,
+      totalResponsaveis: 0,
+    });
+
+  const [carregandoSequencia, setCarregandoSequencia] =
+    useState(true);
+
   useEffect(() => {
     async function carregarPerfil() {
       if (!user) {
@@ -86,6 +100,31 @@ export default function Perfil() {
     }
 
     carregarPerfil();
+  }, [user]);
+
+  useEffect(() => {
+    async function carregarSequencia() {
+      if (!user) {
+        setCarregandoSequencia(false);
+        return;
+      }
+
+      try {
+        const dados =
+          await getSequenciaAtendimentos(user.id);
+
+        setDadosSequencia(dados);
+      } catch (error) {
+        console.error(
+          "Erro ao carregar sequência:",
+          error
+        );
+      } finally {
+        setCarregandoSequencia(false);
+      }
+    }
+
+    carregarSequencia();
   }, [user]);
 
   const handleSalvar = async () => {
@@ -231,6 +270,53 @@ export default function Perfil() {
             <Text style={styles.errorText}>{erro}</Text>
           ) : null}
         </View>
+
+        {/* SEQUÊNCIA DE ATENDIMENTOS */}
+        <Pressable
+          style={styles.sequenceCard}
+          onPress={() => router.push("/sequencia")}
+        >
+          <View style={styles.sequenceIcon}>
+            <Ionicons
+              name="flame"
+              size={30}
+              color="#FF7A00"
+            />
+          </View>
+
+          <View style={styles.sequenceContent}>
+            <Text style={styles.sequenceLabel}>
+              Sequência atual
+            </Text>
+
+            {carregandoSequencia ? (
+              <ActivityIndicator
+                size="small"
+                color={COLORS.blue}
+                style={styles.sequenceLoading}
+              />
+            ) : (
+              <>
+                <Text style={styles.sequenceValue}>
+                  {dadosSequencia.atual}{" "}
+                  {dadosSequencia.atual === 1
+                    ? "atendimento seguido"
+                    : "atendimentos seguidos"}
+                </Text>
+
+                <Text style={styles.sequenceRecord}>
+                  Recorde pessoal: {dadosSequencia.recorde}
+                </Text>
+              </>
+            )}
+          </View>
+
+          <Ionicons
+            name="chevron-forward"
+            size={20}
+            color={COLORS.secondary}
+          />
+        </Pressable>
 
         {/* NÍVEL / PROGRESSO */}
         <View style={styles.levelCard}>
@@ -506,6 +592,60 @@ const styles = StyleSheet.create({
     fontSize: 12.5,
     marginBottom: 12,
     alignSelf: "flex-start",
+  },
+
+  sequenceCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: COLORS.white,
+    borderRadius: 16,
+    padding: 16,
+    marginTop: 14,
+    borderWidth: 1,
+    borderColor: "#EEF1F6",
+    shadowColor: COLORS.text,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+
+  sequenceIcon: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: "#FFF3E7",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  sequenceContent: {
+    flex: 1,
+    marginLeft: 14,
+  },
+
+  sequenceLabel: {
+    color: COLORS.secondary,
+    fontSize: 11.5,
+    fontWeight: "600",
+  },
+
+  sequenceValue: {
+    color: COLORS.text,
+    fontSize: 15,
+    fontWeight: "700",
+    marginTop: 2,
+  },
+
+  sequenceRecord: {
+    color: COLORS.secondary,
+    fontSize: 11.5,
+    marginTop: 3,
+  },
+
+  sequenceLoading: {
+    alignSelf: "flex-start",
+    marginTop: 6,
   },
 
   levelCard: {
