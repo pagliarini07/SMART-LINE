@@ -9,6 +9,7 @@ import {
   TextInput,
   View,
 } from "react-native";
+import { mensagemErroAuth } from "../../lib/errors";
 import { supabase } from "../../lib/supabase";
 
 export default function Cadastro() {
@@ -52,7 +53,7 @@ export default function Cadastro() {
   });
 
   if (error) {
-    setError(error.message);
+    setError(mensagemErroAuth(error));
     return;
   }
 

@@ -40,7 +40,7 @@ type Local = {
 
 const LOCAIS: Local[] = [
   {
-    id: "resolve",
+    id: "22222222-2222-2222-2222-222222222001",
     nome: "Resolve Palmas — Centro",
     endereco: "Av. JK, 104 Norte, Palmas – TO",
     distancia: "450 m",
@@ -51,7 +51,7 @@ const LOCAIS: Local[] = [
     iconBackground: COLORS.lightBlue,
   },
   {
-    id: "cartorio",
+    id: "22222222-2222-2222-2222-222222222002",
     nome: "Cartório 2º Ofício",
     endereco: "Quadra 104 Norte, Av. LO 2, Nº 30",
     distancia: "850 m",
@@ -62,7 +62,7 @@ const LOCAIS: Local[] = [
     iconBackground: COLORS.yellowSoft,
   },
   {
-    id: "detran",
+    id: "22222222-2222-2222-2222-222222222003",
     nome: "Detran Palmas",
     endereco: "104 Sul, Av. LO 1, Conj. 01, Lt. 05",
     distancia: "1,2 km",
@@ -112,6 +112,9 @@ export default function Locais() {
   const [busca, setBusca] = useState("");
   const abrirServicos = () => {
     router.push("/servicos" as never);
+  };
+  const abrirAvaliacao = (localId: string) => {
+    router.push(`/avaliar/${localId}` as never);
   };
   const normalizar = (texto: string) =>
   texto
@@ -188,7 +191,12 @@ export default function Locais() {
             />
           </View>
 
-          <View style={styles.categories}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={styles.categoriesScroll}
+            contentContainerStyle={styles.categories}
+          >
             {CATEGORIAS.map((categoria) => (
               <Pressable
                 key={categoria.id}
@@ -208,7 +216,8 @@ export default function Locais() {
                 <Text
                   style={[
                     styles.categoryText,
-                    categoriaAtiva === categoria.id && styles.categoryActive,
+                    categoriaAtiva === categoria.id &&
+                      styles.categoryTextActive,
                   ]}
                   numberOfLines={1}
                 >
@@ -216,17 +225,36 @@ export default function Locais() {
                 </Text>
               </Pressable>
             ))}
-          </View>
+          </ScrollView>
 
-          <View style={styles.sectionTitleRow}>
-            <Ionicons
-              name="locate-outline"
-              size={21}
-              color={COLORS.blue}
-            />
+            <View style={styles.sectionTitleRow}>
+              <View style={styles.sectionTitleLeft}>
+                <Ionicons
+                  name="locate-outline"
+                  size={21}
+                  color={COLORS.blue}
+                />
 
-            <Text style={styles.sectionTitle}>Locais próximos</Text>
-          </View>
+                <Text style={styles.sectionTitle}>
+                  Locais disponíveis
+                </Text>
+              </View>
+
+              <Pressable
+                style={styles.rankingButton}
+                onPress={() => router.push("/ranking")}
+              >
+                <Ionicons
+                  name="trophy-outline"
+                  size={15}
+                  color={COLORS.blue}
+                />
+
+                <Text style={styles.rankingButtonText}>
+                  Ranking
+                </Text>
+              </Pressable>
+            </View>
 
           <View style={styles.localList}>
             {locaisFiltrados.length > 0 ? (
@@ -310,6 +338,22 @@ export default function Locais() {
                         color={COLORS.blue}
                       />
                     </Pressable>
+
+                    <Pressable
+                      style={styles.ratingButton}
+                      onPress={() => abrirAvaliacao(local.id)}
+                    >
+                      <Ionicons
+                        name="star-outline"
+                        size={16}
+                        color={COLORS.yellow}
+                      />
+
+                      <Text style={styles.ratingButtonText}>
+                        Avaliar local
+                      </Text>
+                    </Pressable>
+
                   </View>
                 </View>
               ))
@@ -378,6 +422,18 @@ export default function Locais() {
             color={COLORS.secondary}
           />
           <Text style={styles.tabLabel}>Histórico</Text>
+        </Pressable>
+
+        <Pressable
+          style={styles.tabItem}
+          onPress={() => router.push("/conquistas")}
+        >
+          <Ionicons
+            name="trophy-outline"
+            size={22}
+            color={COLORS.secondary}
+          />
+          <Text style={styles.tabLabel}>Conquistas</Text>
         </Pressable>
 
         <Pressable
@@ -507,10 +563,13 @@ const styles = StyleSheet.create({
     outlineStyle: "none" as never,
   },
 
+  categoriesScroll: {
+    marginTop: 16,
+  },
+
   categories: {
     flexDirection: "row",
-    justifyContent: "space-between",
-    marginTop: 16,
+    paddingRight: 8,
   },
 
   category: {
@@ -550,8 +609,35 @@ const styles = StyleSheet.create({
   sectionTitleRow: {
     flexDirection: "row",
     alignItems: "center",
+    justifyContent: "space-between",
     marginTop: 18,
     marginBottom: 15,
+  },
+
+  sectionTitleLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    flex: 1,
+  },
+
+  rankingButton: {
+    height: 32,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: COLORS.blue,
+    backgroundColor: COLORS.lightBlue,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 10,
+    marginLeft: 8,
+  },
+
+  rankingButtonText: {
+    color: COLORS.blue,
+    fontSize: 12,
+    fontWeight: "700",
+    marginLeft: 4,
   },
 
   sectionTitle: {
@@ -688,6 +774,25 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     textAlign: "center",
     marginLeft: 17,
+  },
+
+  ratingButton: {
+    height: 28,
+    borderRadius: 15,
+    borderWidth: 1,
+    borderColor: COLORS.yellow,
+    backgroundColor: COLORS.yellowSoft,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 5,
+  },
+
+  ratingButtonText: {
+    color: COLORS.text,
+    fontSize: 13,
+    fontWeight: "600",
+    marginLeft: 5,
   },
 
   mapButton: {

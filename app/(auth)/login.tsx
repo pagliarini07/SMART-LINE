@@ -10,6 +10,7 @@ import {
   View,
 } from "react-native";
 import { useAuth } from "../../contexts/AuthContext";
+import { mensagemErroAuth } from "../../lib/errors";
 
 export default function Login() {
     const [email, setEmail] = useState("");
@@ -34,11 +35,7 @@ export default function Login() {
             await signIn(email.trim().toLowerCase(), password);
             router.replace("/locais");
         } catch (error) {
-            if (error instanceof Error) {
-                setError(error.message);
-            } else {
-                setError("Não foi possível iniciar a sessão.");
-            }
+            setError(mensagemErroAuth(error));
         }
     };
 

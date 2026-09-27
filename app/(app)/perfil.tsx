@@ -12,6 +12,11 @@ import {
   View,
 } from "react-native";
 import { useAuth } from "../../contexts/AuthContext";
+import {
+  calcularPercentual,
+  formatarPontos,
+  RESUMO_NIVEL,
+} from "../../lib/niveis";
 import { getProfile, saveProfile } from "../../lib/profiles";
 import {
   getSequenciaAtendimentos,
@@ -45,6 +50,11 @@ function formatarCpf(cpf: string) {
     "$1.$2.$3-$4"
   );
 }
+
+const progressoNivel = calcularPercentual(
+  RESUMO_NIVEL.pontosNivelAtual,
+  RESUMO_NIVEL.pontosProximoNivel
+);
 
 export default function Perfil() {
   const { user, signOut } = useAuth();
@@ -261,7 +271,7 @@ export default function Perfil() {
           ) : null}
         </View>
 
-        {/* GAMIFICAÇÃO */}
+        {/* SEQUÊNCIA DE ATENDIMENTOS */}
         <Pressable
           style={styles.sequenceCard}
           onPress={() => router.push("/sequencia")}
@@ -303,7 +313,77 @@ export default function Perfil() {
 
           <Ionicons
             name="chevron-forward"
-            size={22}
+            size={20}
+            color={COLORS.secondary}
+          />
+        </Pressable>
+
+        {/* NÍVEL / PROGRESSO */}
+        <View style={styles.levelCard}>
+          <View style={styles.levelIconWrap}>
+            <Ionicons name="trophy" size={20} color={COLORS.yellow} />
+          </View>
+
+          <View style={styles.levelInfo}>
+            <Text style={styles.levelTitle}>
+              Nível {RESUMO_NIVEL.nivelAtual} • {RESUMO_NIVEL.nomeNivel}
+            </Text>
+            <Text style={styles.levelSubtitle}>
+              Faltam{" "}
+              {formatarPontos(
+                RESUMO_NIVEL.pontosProximoNivel - RESUMO_NIVEL.pontosNivelAtual
+              )}{" "}
+              pontos para o nível {RESUMO_NIVEL.nivelAtual + 1}
+            </Text>
+
+            <View style={styles.levelProgressTrack}>
+              <View
+                style={[
+                  styles.levelProgressFill,
+                  { width: `${progressoNivel}%` },
+                ]}
+              />
+            </View>
+
+            <View style={styles.levelFooterRow}>
+              <Text style={styles.levelProgressText}>
+                {formatarPontos(RESUMO_NIVEL.pontosNivelAtual)} /{" "}
+                {formatarPontos(RESUMO_NIVEL.pontosProximoNivel)} pts
+              </Text>
+
+              <Pressable onPress={() => router.push("/conquistas")}>
+                <Text style={styles.levelLink}>Ver conquistas</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+
+        {/* MINHAS AVALIAÇÕES */}
+        <Pressable
+          style={styles.ratingButton}
+          onPress={() => router.push("/minhas-avaliacoes")}
+        >
+          <View style={styles.ratingIconWrap}>
+            <Ionicons
+              name="star-outline"
+              size={20}
+              color={COLORS.yellow}
+            />
+          </View>
+
+          <View style={styles.ratingInfo}>
+            <Text style={styles.ratingTitle}>
+              Minhas avaliações
+            </Text>
+
+            <Text style={styles.ratingSubtitle}>
+              Consulte e edite suas avaliações
+            </Text>
+          </View>
+
+          <Ionicons
+            name="chevron-forward"
+            size={20}
             color={COLORS.secondary}
           />
         </Pressable>
@@ -347,6 +427,18 @@ export default function Perfil() {
         >
           <Ionicons name="time-outline" size={22} color={COLORS.secondary} />
           <Text style={styles.tabLabel}>Histórico</Text>
+        </Pressable>
+
+        <Pressable
+          style={styles.tabItem}
+          onPress={() => router.push("/conquistas")}
+        >
+          <Ionicons
+            name="trophy-outline"
+            size={22}
+            color={COLORS.secondary}
+          />
+          <Text style={styles.tabLabel}>Conquistas</Text>
         </Pressable>
 
         <View style={styles.tabItem}>
@@ -511,7 +603,6 @@ const styles = StyleSheet.create({
     marginTop: 14,
     borderWidth: 1,
     borderColor: "#EEF1F6",
-
     shadowColor: COLORS.text,
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.05,
@@ -555,6 +646,114 @@ const styles = StyleSheet.create({
   sequenceLoading: {
     alignSelf: "flex-start",
     marginTop: 6,
+  },
+
+  levelCard: {
+    marginTop: 14,
+    backgroundColor: COLORS.white,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: "#E8EDF7",
+    padding: 14,
+    flexDirection: "row",
+    alignItems: "flex-start",
+  },
+
+  levelIconWrap: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: "#FFF2CC",
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 12,
+    marginTop: 2,
+  },
+
+  levelInfo: {
+    flex: 1,
+  },
+
+  levelTitle: {
+    color: COLORS.text,
+    fontSize: 14,
+    fontWeight: "700",
+  },
+
+  levelSubtitle: {
+    color: COLORS.secondary,
+    fontSize: 12,
+    marginTop: 3,
+  },
+
+  levelProgressTrack: {
+    marginTop: 10,
+    height: 8,
+    borderRadius: 999,
+    backgroundColor: "#E9EEF7",
+    overflow: "hidden",
+  },
+
+  levelProgressFill: {
+    height: "100%",
+    borderRadius: 999,
+    backgroundColor: COLORS.blue,
+  },
+
+  levelFooterRow: {
+    marginTop: 6,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+
+  levelProgressText: {
+    color: COLORS.secondary,
+    fontSize: 11,
+    fontWeight: "600",
+  },
+
+  levelLink: {
+    color: COLORS.blue,
+    fontSize: 12,
+    fontWeight: "700",
+  },
+
+  ratingButton: {
+    marginTop: 14,
+    backgroundColor: COLORS.white,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: "#E8EDF7",
+    padding: 14,
+    flexDirection: "row",
+    alignItems: "center",
+  },
+
+  ratingIconWrap: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: "#FFF2CC",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  ratingInfo: {
+    flex: 1,
+    marginLeft: 12,
+  },
+
+  ratingTitle: {
+    color: COLORS.text,
+    fontSize: 14,
+    fontWeight: "700",
+  },
+
+  ratingSubtitle: {
+    color: COLORS.secondary,
+    fontSize: 12,
+    marginTop: 3,
   },
 
   logoutButton: {
