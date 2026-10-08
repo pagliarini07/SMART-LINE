@@ -1,6 +1,8 @@
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
+import { useEffect, useState } from "react";
 import {
+  ActivityIndicator,
   Pressable,
   SafeAreaView,
   ScrollView,
@@ -10,6 +12,12 @@ import {
   View,
 } from "react-native";
 import BottomTabBar from "../../components/BottomTabBar";
+import { useAuth } from "../../hooks/useAuth";
+import {
+  AtendimentoHistorico,
+  getHistoricoSenhas,
+  StatusAtendimento,
+} from "../../services/senhas";
 
 const COLORS = {
   blue: "#0757D8",
@@ -24,51 +32,18 @@ const COLORS = {
   greenSoft: "#EAF8EF",
   red: "#D32F2F",
   redSoft: "#FBE9E9",
+  orange: "#E67E22",
+  orangeSoft: "#FFF3E6",
 };
-
-type StatusAtendimento = "atendido" | "cancelado";
-
-type Atendimento = {
-  id: string;
-  servico: string;
-  local: string;
-  data: string;
-  hora: string;
-  status: StatusAtendimento;
-};
-
-// Dados mocados só para exibir a tela — trocar por dados reais (Supabase)
-// quando a integração de fila/senhas for feita.
-const HISTORICO: Atendimento[] = [
-  {
-    id: "1",
-    servico: "Emissão de documentos",
-    local: "Resolve Palmas — Centro",
-    data: "05/09/2026",
-    hora: "14:32",
-    status: "atendido",
-  },
-  {
-    id: "2",
-    servico: "Atendimento tributário",
-    local: "Resolve Palmas — Centro",
-    data: "28/08/2026",
-    hora: "09:15",
-    status: "atendido",
-  },
-  {
-    id: "3",
-    servico: "Credencial do idoso",
-    local: "Cartório 2º Ofício",
-    data: "20/08/2026",
-    hora: "11:47",
-    status: "cancelado",
-  },
-];
 
 const STATUS_INFO: Record<
   StatusAtendimento,
-  { label: string; color: string; background: string; icon: keyof typeof Ionicons.glyphMap }
+  {
+    label: string;
+    color: string;
+    background: string;
+    icon: keyof typeof Ionicons.glyphMap;
+  }
 > = {
   atendido: {
     label: "Atendido",
@@ -76,47 +51,121 @@ const STATUS_INFO: Record<
     background: COLORS.greenSoft,
     icon: "checkmark-circle",
   },
+
   cancelado: {
     label: "Cancelado",
     color: COLORS.red,
     background: COLORS.redSoft,
     icon: "close-circle",
   },
+
+  nao_compareceu: {
+    label: "Não compareceu",
+    color: COLORS.orange,
+    background: COLORS.orangeSoft,
+    icon: "alert-circle",
+  },
 };
 
 export default function Historico() {
+  const { user } = useAuth();
+
+  const [historico, setHistorico] = useState<AtendimentoHistorico[]>([]);
+  const [carregando, setCarregando] = useState(true);
+  const [erro, setErro] = useState("");
+
+  useEffect(() => {
+    async function carregarHistorico() {
+      if (!user) {
+        setCarregando(false);
+        return;
+      }
+
+      try {
+        setErro("");
+
+        const dados = await getHistoricoSenhas(user.id);
+
+        setHistorico(dados);
+      } catch (error) {
+        console.error("Erro ao carregar histórico:", error);
+        setErro("Não foi possível carregar seu histórico agora.");
+      } finally {
+        setCarregando(false);
+      }
+    }
+
+    carregarHistorico();
+  }, [user]);
+
   return (
     <SafeAreaView style={styles.screen}>
-      <StatusBar barStyle="dark-content" backgroundColor={COLORS.background} />
+      <StatusBar
+        barStyle="dark-content"
+        backgroundColor={COLORS.background}
+      />
 
       <View style={styles.header}>
-        <Pressable style={styles.backButton} onPress={() => router.back()}>
-          <Ionicons name="chevron-back" size={22} color={COLORS.white} />
+        <Pressable
+          style={styles.backButton}
+          onPress={() => router.back()}
+        >
+          <Ionicons
+            name="chevron-back"
+            size={22}
+            color={COLORS.white}
+          />
         </Pressable>
+
         <Text style={styles.headerTitle}>Histórico</Text>
       </View>
 
-      {HISTORICO.length > 0 ? (
+      {carregando ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator
+            size="large"
+            color={COLORS.blue}
+          />
+        </View>
+      ) : historico.length > 0 ? (
         <ScrollView
           contentContainerStyle={styles.list}
           showsVerticalScrollIndicator={false}
         >
-          {HISTORICO.map((item) => {
+          {historico.map((item) => {
             const info = STATUS_INFO[item.status];
 
             return (
-              <View key={item.id} style={styles.card}>
+              <View
+                key={item.id}
+                style={styles.card}
+              >
                 <View style={styles.cardHeader}>
-                  <Text style={styles.servico}>{item.servico}</Text>
+                  <Text style={styles.servico}>
+                    {item.servico}
+                  </Text>
 
                   <View
                     style={[
                       styles.statusPill,
-                      { backgroundColor: info.background },
+                      {
+                        backgroundColor:
+                          info.background,
+                      },
                     ]}
                   >
-                    <Ionicons name={info.icon} size={13} color={info.color} />
-                    <Text style={[styles.statusText, { color: info.color }]}>
+                    <Ionicons
+                      name={info.icon}
+                      size={13}
+                      color={info.color}
+                    />
+
+                    <Text
+                      style={[
+                        styles.statusText,
+                        { color: info.color },
+                      ]}
+                    >
                       {info.label}
                     </Text>
                   </View>
@@ -128,7 +177,10 @@ export default function Historico() {
                     size={13}
                     color={COLORS.secondary}
                   />
-                  <Text style={styles.infoText}>{item.local}</Text>
+
+                  <Text style={styles.infoText}>
+                    {item.local}
+                  </Text>
                 </View>
 
                 <View style={styles.infoRow}>
@@ -137,6 +189,7 @@ export default function Historico() {
                     size={13}
                     color={COLORS.secondary}
                   />
+
                   <Text style={styles.infoText}>
                     {item.data} às {item.hora}
                   </Text>
@@ -148,25 +201,35 @@ export default function Historico() {
       ) : (
         <View style={styles.emptyState}>
           <View style={styles.emptyIcon}>
-            <Ionicons name="time-outline" size={40} color={COLORS.blue} />
+            <Ionicons
+              name="time-outline"
+              size={40}
+              color={COLORS.blue}
+            />
           </View>
 
-          <Text style={styles.emptyTitle}>Nenhum atendimento ainda</Text>
+          <Text style={styles.emptyTitle}>
+            {erro
+              ? "Não foi possível carregar"
+              : "Nenhum atendimento ainda"}
+          </Text>
+
           <Text style={styles.emptyDescription}>
-            Assim que você retirar e concluir uma senha, o histórico dos seus
-            atendimentos aparece aqui.
+            {erro ||
+              "Assim que você retirar e concluir uma senha, o histórico dos seus atendimentos aparece aqui."}
           </Text>
 
           <Pressable
             style={styles.emptyButton}
             onPress={() => router.push("/locais")}
           >
-            <Text style={styles.emptyButtonText}>Ver locais</Text>
+            <Text style={styles.emptyButtonText}>
+              Ver locais
+            </Text>
           </Pressable>
         </View>
       )}
 
-      {/* BARRA INFERIOR */}
       <BottomTabBar />
     </SafeAreaView>
   );
@@ -204,6 +267,12 @@ const styles = StyleSheet.create({
     marginLeft: 14,
   },
 
+  loadingContainer: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
   list: {
     paddingHorizontal: 16,
     paddingBottom: 20,
@@ -218,7 +287,10 @@ const styles = StyleSheet.create({
     marginBottom: 12,
 
     shadowColor: COLORS.text,
-    shadowOffset: { width: 0, height: 3 },
+    shadowOffset: {
+      width: 0,
+      height: 3,
+    },
     shadowOpacity: 0.05,
     shadowRadius: 6,
     elevation: 2,
@@ -310,5 +382,4 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "700",
   },
-
 });
