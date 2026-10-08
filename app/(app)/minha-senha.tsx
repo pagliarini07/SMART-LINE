@@ -1,7 +1,8 @@
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
+  ActivityIndicator,
   Pressable,
   SafeAreaView,
   StatusBar,
@@ -10,6 +11,8 @@ import {
   View,
 } from "react-native";
 import BottomTabBar from "../../components/BottomTabBar";
+import { useAuth } from "../../contexts/AuthContext";
+import { getSenhaAtiva, SenhaAtiva } from "../../lib/senhas";
 
 const COLORS = {
   blue: "#0757D8",
@@ -22,24 +25,33 @@ const COLORS = {
   borderBlue: "#CFE0FF",
 };
 
-type SenhaAtiva = {
-  codigo: string;
-  servico: string;
-  posicao: number;
-  tempoEstimado: string;
-};
-
-// Dados mocados só para exibir a tela — trocar por dados reais (API / estado
-// global) quando a integração de fila for feita.
-const SENHA_MOCK: SenhaAtiva = {
-  codigo: "A032",
-  servico: "Emissão de documentos",
-  posicao: 4,
-  tempoEstimado: "~20 minutos",
-};
-
 export default function MinhaSenha() {
-  const [senhaAtiva, setSenhaAtiva] = useState<SenhaAtiva | null>(SENHA_MOCK);
+  const { user } = useAuth();
+
+  const [carregando, setCarregando] = useState(true);
+  const [erro, setErro] = useState("");
+  const [senhaAtiva, setSenhaAtiva] = useState<SenhaAtiva | null>(null);
+
+  useEffect(() => {
+    async function carregarSenha() {
+      if (!user) {
+        setCarregando(false);
+        return;
+      }
+
+      try {
+        const senha = await getSenhaAtiva(user.id);
+        setSenhaAtiva(senha);
+      } catch (error) {
+        console.error("Erro ao carregar senha ativa:", error);
+        setErro("Não foi possível carregar sua senha agora.");
+      } finally {
+        setCarregando(false);
+      }
+    }
+
+    carregarSenha();
+  }, [user]);
 
   return (
     <SafeAreaView style={styles.screen}>
@@ -53,11 +65,19 @@ export default function MinhaSenha() {
       </View>
 
       <View style={styles.content}>
-        {senhaAtiva ? (
+        {carregando ? (
+          <ActivityIndicator
+            style={styles.loading}
+            color={COLORS.blue}
+          />
+        ) : senhaAtiva ? (
           <>
             <View style={styles.senhaCard}>
               <Text style={styles.senhaCodigo}>{senhaAtiva.codigo}</Text>
-              <Text style={styles.senhaServico}>{senhaAtiva.servico}</Text>
+              <Text style={styles.senhaServico}>
+                {senhaAtiva.servico}
+                {senhaAtiva.local ? ` • ${senhaAtiva.local}` : ""}
+              </Text>
 
               <View style={styles.positionCircle}>
                 <Text style={styles.positionNumber}>
@@ -67,7 +87,7 @@ export default function MinhaSenha() {
               </View>
 
               <Text style={styles.estimate}>
-                Tempo estimado: {senhaAtiva.tempoEstimado}
+                Tempo estimado: ~{senhaAtiva.tempoEstimadoMinutos} minutos
               </Text>
             </View>
 
@@ -82,6 +102,9 @@ export default function MinhaSenha() {
               </Text>
             </View>
 
+            {/* TODO: ainda só limpa a tela localmente — cancelar a senha de
+                verdade (status = "cancelado" em senhas) é escopo da
+                integração de mutações (issue #42). */}
             <Pressable
               style={styles.leaveButton}
               onPress={() => setSenhaAtiva(null)}
@@ -101,8 +124,8 @@ export default function MinhaSenha() {
 
             <Text style={styles.emptyTitle}>Nenhuma senha retirada</Text>
             <Text style={styles.emptyDescription}>
-              Escolha um serviço para retirar sua senha digital e acompanhar
-              a fila em tempo real.
+              {erro ||
+                "Escolha um serviço para retirar sua senha digital e acompanhar a fila em tempo real."}
             </Text>
 
             <Pressable
@@ -158,6 +181,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingHorizontal: 30,
     paddingTop: 10,
+  },
+
+  loading: {
+    marginTop: 60,
   },
 
   senhaCard: {

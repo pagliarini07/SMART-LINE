@@ -1,7 +1,8 @@
 import { Ionicons } from "@expo/vector-icons";
 import { router, Stack } from "expo-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
+  ActivityIndicator,
   Pressable,
   SafeAreaView,
   ScrollView,
@@ -12,6 +13,7 @@ import {
   View,
 } from "react-native";
 import BottomTabBar from "../../components/BottomTabBar";
+import { Categoria, listarCategorias, listarLocais, Local } from "../../lib/locais";
 
 const COLORS = {
   blue: "#0757D8",
@@ -27,90 +29,37 @@ const COLORS = {
   yellowSoft: "#FFF7E5",
 };
 
-type Local = {
-  id: string;
-  nome: string;
-  endereco: string;
-  distancia: string;
-  pessoasAguardando: number;
-  tipo: string;
-  icon: keyof typeof Ionicons.glyphMap;
-  iconColor: string;
-  iconBackground: string;
-};
-
-const LOCAIS: Local[] = [
-  {
-    id: "22222222-2222-2222-2222-222222222001",
-    nome: "Resolve Palmas — Centro",
-    endereco: "Av. JK, 104 Norte, Palmas – TO",
-    distancia: "450 m",
-    pessoasAguardando: 18,
-    tipo: "servicos",
-    icon: "grid-outline",
-    iconColor: COLORS.blue,
-    iconBackground: COLORS.lightBlue,
-  },
-  {
-    id: "22222222-2222-2222-2222-222222222002",
-    nome: "Cartório 2º Ofício",
-    endereco: "Quadra 104 Norte, Av. LO 2, Nº 30",
-    distancia: "850 m",
-    pessoasAguardando: 6,
-    tipo: "cartorios",
-    icon: "document-text-outline",
-    iconColor: "#274A8A",
-    iconBackground: COLORS.yellowSoft,
-  },
-  {
-    id: "22222222-2222-2222-2222-222222222003",
-    nome: "Detran Palmas",
-    endereco: "104 Sul, Av. LO 1, Conj. 01, Lt. 05",
-    distancia: "1,2 km",
-    pessoasAguardando: 24,
-    tipo: "veiculos",
-    icon: "car-outline",
-    iconColor: COLORS.blue,
-    iconBackground: COLORS.lightBlue,
-  },
-];
-
-const CATEGORIAS = [
-  {
-    id: "todos",
-    nome: "Todos",
-    icon: "apps-outline" as keyof typeof Ionicons.glyphMap,
-    width: 64,
-  },  
-  {
-    id: "cartorios",
-    nome: "Cartórios",
-    icon: "business-outline" as keyof typeof Ionicons.glyphMap,
-    width: 74,
-  },
-  {
-    id: "servicos",
-    nome: "Serviços",
-    icon: "ellipsis-horizontal" as keyof typeof Ionicons.glyphMap,
-    width: 80,
-  },
-  {
-    id: "documentacao",
-    nome: "Documentação",
-    icon: "document-text-outline" as keyof typeof Ionicons.glyphMap,
-    width: 98,
-  },
-  {
-    id: "veiculos",
-    nome: "Veículos",
-    icon: "car-outline" as keyof typeof Ionicons.glyphMap,
-    width: 72,
-  },
-];
+const CATEGORIA_TODOS = "todos";
 
 export default function Locais() {
-  const [categoriaAtiva, setCategoriaAtiva] = useState("todos");
+  const [categoriaAtiva, setCategoriaAtiva] = useState(CATEGORIA_TODOS);
   const [busca, setBusca] = useState("");
+  const [carregando, setCarregando] = useState(true);
+  const [erro, setErro] = useState("");
+  const [locais, setLocais] = useState<Local[]>([]);
+  const [categorias, setCategorias] = useState<Categoria[]>([]);
+
+  useEffect(() => {
+    async function carregarDados() {
+      try {
+        const [locaisData, categoriasData] = await Promise.all([
+          listarLocais(),
+          listarCategorias(),
+        ]);
+
+        setLocais(locaisData);
+        setCategorias(categoriasData);
+      } catch (error) {
+        console.error("Erro ao carregar locais:", error);
+        setErro("Não foi possível carregar os locais agora.");
+      } finally {
+        setCarregando(false);
+      }
+    }
+
+    carregarDados();
+  }, []);
+
   const abrirServicos = () => {
     router.push("/servicos" as never);
   };
@@ -124,10 +73,10 @@ export default function Locais() {
     .toLowerCase()
     .trim();
   const termoBusca = normalizar(busca);  
-  const locaisFiltrados = LOCAIS.filter((local) => {
+  const locaisFiltrados = locais.filter((local) => {
     const correspondeCategoria =
-      categoriaAtiva === "todos" ||
-      local.tipo === categoriaAtiva;
+      categoriaAtiva === CATEGORIA_TODOS ||
+      local.categoriaId === categoriaAtiva;
 
     const textoLocal = normalizar(
       `${local.nome} ${local.endereco}`
@@ -198,18 +147,40 @@ export default function Locais() {
             style={styles.categoriesScroll}
             contentContainerStyle={styles.categories}
           >
-            {CATEGORIAS.map((categoria) => (
+            <Pressable
+              onPress={() => setCategoriaAtiva(CATEGORIA_TODOS)}
+              style={[
+                styles.category,
+                { width: 64 },
+                categoriaAtiva === CATEGORIA_TODOS && styles.categoryActive,
+              ]}
+            >
+              <Ionicons name="apps-outline" size={14} color={COLORS.blue} />
+
+              <Text
+                style={[
+                  styles.categoryText,
+                  categoriaAtiva === CATEGORIA_TODOS &&
+                    styles.categoryTextActive,
+                ]}
+                numberOfLines={1}
+              >
+                Todos
+              </Text>
+            </Pressable>
+
+            {categorias.map((categoria) => (
               <Pressable
                 key={categoria.id}
                 onPress={() => setCategoriaAtiva(categoria.id)}
                 style={[
                   styles.category,
-                  { width: categoria.width },
+                  styles.categoryAuto,
                   categoriaAtiva === categoria.id && styles.categoryActive,
                 ]}
               >
                 <Ionicons
-                  name={categoria.icon}
+                  name={categoria.icone}
                   size={14}
                   color={COLORS.blue}
                 />
@@ -258,19 +229,24 @@ export default function Locais() {
             </View>
 
           <View style={styles.localList}>
-            {locaisFiltrados.length > 0 ? (
+            {carregando ? (
+              <ActivityIndicator
+                style={styles.loading}
+                color={COLORS.blue}
+              />
+            ) : locaisFiltrados.length > 0 ? (
               locaisFiltrados.map((local) => (
                 <View key={local.id} style={styles.localCard}>
                   <View
                     style={[
                       styles.localIcon,
-                      { backgroundColor: local.iconBackground },
+                      { backgroundColor: local.corFundo },
                     ]}
                   >
                     <Ionicons
-                      name={local.icon}
+                      name={local.icone}
                       size={30}
-                      color={local.iconColor}
+                      color={local.corIcone}
                     />
                   </View>
 
@@ -307,9 +283,26 @@ export default function Locais() {
                     </View>
 
                     <View style={styles.infoRow}>
-                      <View style={styles.openPill}>
-                        <View style={styles.openDot} />
-                        <Text style={styles.openText}>Aberto</Text>
+                      <View
+                        style={[
+                          styles.openPill,
+                          !local.aberto && styles.closedPill,
+                        ]}
+                      >
+                        <View
+                          style={[
+                            styles.openDot,
+                            !local.aberto && styles.closedDot,
+                          ]}
+                        />
+                        <Text
+                          style={[
+                            styles.openText,
+                            !local.aberto && styles.closedText,
+                          ]}
+                        >
+                          {local.aberto ? "Aberto" : "Fechado"}
+                        </Text>
                       </View>
 
                       <View style={styles.waitingRow}>
@@ -369,11 +362,11 @@ export default function Locais() {
                 </View>
 
                 <Text style={styles.emptyTitle}>
-                  Nenhum local encontrado
+                  {erro ? "Não foi possível carregar os locais" : "Nenhum local encontrado"}
                 </Text>
 
                 <Text style={styles.emptyDescription}>
-                  Não encontramos locais para sua busca ou categoria.
+                  {erro || "Não encontramos locais para sua busca ou categoria."}
                 </Text>
               </View>
             )}
@@ -541,6 +534,10 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
   },
 
+  categoryAuto: {
+    paddingHorizontal: 12,
+  },
+
   categoryText: {
     color: COLORS.text,
     fontSize: 8.6,
@@ -595,6 +592,10 @@ const styles = StyleSheet.create({
 
   localList: {
     gap: 7,
+  },
+
+  loading: {
+    marginTop: 30,
   },
 
   localCard: {
@@ -687,6 +688,18 @@ const styles = StyleSheet.create({
     color: COLORS.green,
     fontSize: 11,
     fontWeight: "600",
+  },
+
+  closedPill: {
+    backgroundColor: "#FBE9E9",
+  },
+
+  closedDot: {
+    backgroundColor: "#D32F2F",
+  },
+
+  closedText: {
+    color: "#D32F2F",
   },
 
   waitingRow: {
