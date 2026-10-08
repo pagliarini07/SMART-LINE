@@ -12,11 +12,11 @@ import {
   View,
 } from "react-native";
 
-import { useAuth } from "../../contexts/AuthContext";
+import { useAuth } from "../../../hooks/useAuth";
 import {
   DadosSequencia,
   getSequenciaAtendimentos,
-} from "../../lib/sequencia";
+} from "../../../services/sequencia";
 
 const COLORS = {
   blue: "#0757D8",

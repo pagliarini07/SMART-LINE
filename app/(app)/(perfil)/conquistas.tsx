@@ -14,7 +14,7 @@ import {
   calcularPercentual,
   formatarPontos,
   RESUMO_NIVEL,
-} from "../../lib/niveis";
+} from "../../../utils/niveis";
 
 const COLORS = {
   blue: "#0757D8",
@@ -331,36 +331,6 @@ export default function Conquistas() {
           )}
         </View>
       </ScrollView>
-
-      <View style={styles.tabBar}>
-        <Pressable
-          style={styles.tabItem}
-          onPress={() => router.push("/locais")}
-        >
-          <Ionicons name="home-outline" size={22} color={COLORS.secondary} />
-          <Text style={styles.tabLabel}>Início</Text>
-        </Pressable>
-
-        <Pressable style={styles.tabItem} onPress={() => router.push("/minha-senha")}>
-          <Ionicons name="ticket-outline" size={22} color={COLORS.secondary} />
-          <Text style={styles.tabLabel}>Minha senha</Text>
-        </Pressable>
-
-        <Pressable style={styles.tabItem} onPress={() => router.push("/historico")}>
-          <Ionicons name="time-outline" size={22} color={COLORS.secondary} />
-          <Text style={styles.tabLabel}>Histórico</Text>
-        </Pressable>
-
-        <View style={styles.tabItem}>
-          <Ionicons name="trophy" size={22} color={COLORS.blue} />
-          <Text style={[styles.tabLabel, styles.tabLabelActive]}>Conquistas</Text>
-        </View>
-
-        <Pressable style={styles.tabItem} onPress={() => router.push("/perfil")}>
-          <Ionicons name="person-outline" size={22} color={COLORS.secondary} />
-          <Text style={styles.tabLabel}>Perfil</Text>
-        </Pressable>
-      </View>
     </SafeAreaView>
   );
 }
@@ -700,34 +670,4 @@ const styles = StyleSheet.create({
     marginTop: 3,
   },
 
-  tabBar: {
-    position: "absolute",
-    left: 0,
-    right: 0,
-    bottom: 0,
-    height: 70,
-    borderTopWidth: 1,
-    borderTopColor: "#E8EDF7",
-    backgroundColor: COLORS.white,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 4,
-  },
-
-  tabItem: {
-    flex: 1,
-    alignItems: "center",
-  },
-
-  tabLabel: {
-    color: COLORS.secondary,
-    fontSize: 9,
-    marginTop: 3,
-  },
-
-  tabLabelActive: {
-    color: COLORS.blue,
-    fontWeight: "700",
-  },
 });

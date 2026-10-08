@@ -2,20 +2,20 @@ import { Ionicons } from "@expo/vector-icons";
 import { router, Stack } from "expo-router";
 import { useEffect, useState } from "react";
 import {
-    ActivityIndicator,
-    FlatList,
-    Pressable,
-    SafeAreaView,
-    StatusBar,
-    StyleSheet,
-    Text,
-    View,
+  ActivityIndicator,
+  FlatList,
+  Pressable,
+  SafeAreaView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  View,
 } from "react-native";
 
 import {
-    buscarMinhasAvaliacoes,
-    type Avaliacao,
-} from "../../lib/avaliacoes";
+  buscarMinhasAvaliacoes,
+  type Avaliacao,
+} from "../../../services/avaliacoes";
 
 const COLORS = {
   blue: "#0757D8",

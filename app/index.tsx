@@ -1,6 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Redirect, router } from "expo-router";
-import { useAuth } from "../contexts/AuthContext";
 import {
   Pressable,
   SafeAreaView,
@@ -9,6 +8,7 @@ import {
   Text,
   View,
 } from "react-native";
+import { useAuth } from "../hooks/useAuth";
 
 const COLORS = {
   blue: "#0757D8",

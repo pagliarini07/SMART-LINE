@@ -9,8 +9,8 @@ import {
   TextInput,
   View,
 } from "react-native";
-import { mensagemErroAuth } from "../../lib/errors";
-import { supabase } from "../../lib/supabase";
+import { supabase } from "../../services/supabase";
+import { mensagemErroAuth } from "../../utils/errors";
 
 export default function Cadastro() {
   const [nome, setNome] = useState("");

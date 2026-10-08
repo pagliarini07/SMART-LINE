@@ -2,15 +2,15 @@ import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { useEffect, useState } from "react";
 import {
-    ActivityIndicator,
-    FlatList,
-    Pressable,
-    StyleSheet,
-    Text,
-    View
+  ActivityIndicator,
+  FlatList,
+  Pressable,
+  StyleSheet,
+  Text,
+  View
 } from "react-native";
 
-import { buscarRanking, RankingLocal } from "../../lib/avaliacoes";
+import { buscarRanking, RankingLocal } from "../../services/avaliacoes";
 
 const COLORS = {
   blue: "#0757D8",
