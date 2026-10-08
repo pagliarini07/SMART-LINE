@@ -1,25 +1,25 @@
 import { Ionicons } from "@expo/vector-icons";
 import {
-    router,
-    Stack,
-    useLocalSearchParams,
+  router,
+  Stack,
+  useLocalSearchParams,
 } from "expo-router";
 import { useEffect, useState } from "react";
 import {
-    ActivityIndicator,
-    Pressable,
-    SafeAreaView,
-    StatusBar,
-    StyleSheet,
-    Text,
-    View,
+  ActivityIndicator,
+  Pressable,
+  SafeAreaView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  View,
 } from "react-native";
 
 import {
-    buscarMinhaAvaliacao,
-    criarAvaliacao,
-    editarAvaliacao,
-} from "../../../lib/avaliacoes";
+  buscarMinhaAvaliacao,
+  criarAvaliacao,
+  editarAvaliacao,
+} from "../../../services/avaliacoes";
 
 const COLORS = {
   blue: "#0757D8",

@@ -12,7 +12,8 @@ import {
   TextInput,
   View,
 } from "react-native";
-import { Categoria, listarCategorias, listarLocais, Local } from "../../lib/locais";
+import BottomTabBar from "../../components/BottomTabBar";
+import { Categoria, listarCategorias, listarLocais, Local } from "../../services/locais";
 
 const COLORS = {
   blue: "#0757D8",
@@ -385,62 +386,7 @@ export default function Locais() {
         </ScrollView>
       </View>
 
-      <View style={styles.tabBar}>
-        <View style={styles.tabItem}>
-          <Ionicons name="home-outline" size={22} color={COLORS.blue} />
-          <Text style={[styles.tabLabel, styles.tabLabelActive]}>
-            Início
-          </Text>
-        </View>
-
-        <Pressable
-          style={styles.tabItem}
-          onPress={() => router.push("/minha-senha")}
-        >
-          <Ionicons
-            name="ticket-outline"
-            size={22}
-            color={COLORS.secondary}
-          />
-          <Text style={styles.tabLabel}>Minha senha</Text>
-        </Pressable>
-
-        <Pressable
-          style={styles.tabItem}
-          onPress={() => router.push("/historico")}
-        >
-          <Ionicons
-            name="time-outline"
-            size={22}
-            color={COLORS.secondary}
-          />
-          <Text style={styles.tabLabel}>Histórico</Text>
-        </Pressable>
-
-        <Pressable
-          style={styles.tabItem}
-          onPress={() => router.push("/conquistas")}
-        >
-          <Ionicons
-            name="trophy-outline"
-            size={22}
-            color={COLORS.secondary}
-          />
-          <Text style={styles.tabLabel}>Conquistas</Text>
-        </Pressable>
-
-        <Pressable
-          style={styles.tabItem}
-          onPress={() => router.push("/perfil")}
-        >
-          <Ionicons
-            name="person-outline"
-            size={22}
-            color={COLORS.secondary}
-          />
-          <Text style={styles.tabLabel}>Perfil</Text>
-        </Pressable>
-      </View>
+      <BottomTabBar />
     </SafeAreaView>
   );
 }
@@ -823,41 +769,6 @@ const styles = StyleSheet.create({
     marginRight: 3,
   },
 
-  tabBar: {
-    position: "absolute",
-    left: 0,
-    right: 0,
-    bottom: 0,
-    height: 70,
-    borderTopLeftRadius: 26,
-    borderTopRightRadius: 26,
-    backgroundColor: COLORS.white,
-    flexDirection: "row",
-    alignItems: "center",
-
-    shadowColor: COLORS.text,
-    shadowOffset: { width: 0, height: -3 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 8,
-  },
-
-  tabItem: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-
-  tabLabel: {
-    color: COLORS.secondary,
-    fontSize: 9.5,
-    marginTop: 4,
-  },
-
-  tabLabelActive: {
-    color: COLORS.blue,
-    fontWeight: "600",
-  },
   emptyState: {
     alignItems: "center",
     justifyContent: "center",

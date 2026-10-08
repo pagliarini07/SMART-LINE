@@ -9,8 +9,8 @@ import {
   TextInput,
   View,
 } from "react-native";
-import { useAuth } from "../../contexts/AuthContext";
-import { mensagemErroAuth } from "../../lib/errors";
+import { useAuth } from "../../hooks/useAuth";
+import { mensagemErroAuth } from "../../utils/errors";
 
 export default function Login() {
     const [email, setEmail] = useState("");

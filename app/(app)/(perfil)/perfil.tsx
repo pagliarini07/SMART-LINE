@@ -11,17 +11,18 @@ import {
   TextInput,
   View,
 } from "react-native";
-import { useAuth } from "../../contexts/AuthContext";
+import BottomTabBar from "../../../components/BottomTabBar";
+import { useAuth } from "../../../hooks/useAuth";
+import { getProfile, saveProfile } from "../../../services/profiles";
+import {
+  getSequenciaAtendimentos,
+  type DadosSequencia,
+} from "../../../services/sequencia";
 import {
   calcularPercentual,
   formatarPontos,
   RESUMO_NIVEL,
-} from "../../lib/niveis";
-import { getProfile, saveProfile } from "../../lib/profiles";
-import {
-  getSequenciaAtendimentos,
-  type DadosSequencia,
-} from "../../lib/sequencia";
+} from "../../../utils/niveis";
 
 const COLORS = {
   blue: "#0757D8",
@@ -396,56 +397,7 @@ export default function Perfil() {
       </View>
 
       {/* BARRA INFERIOR */}
-      <View style={styles.tabBar}>
-        <Pressable
-          style={styles.tabItem}
-          onPress={() => router.push("/locais")}
-        >
-          <Ionicons
-            name="home-outline"
-            size={22}
-            color={COLORS.secondary}
-          />
-          <Text style={styles.tabLabel}>Início</Text>
-        </Pressable>
-
-        <Pressable
-          style={styles.tabItem}
-          onPress={() => router.push("/minha-senha")}
-        >
-          <Ionicons
-            name="ticket-outline"
-            size={22}
-            color={COLORS.secondary}
-          />
-          <Text style={styles.tabLabel}>Minha senha</Text>
-        </Pressable>
-
-        <Pressable
-          style={styles.tabItem}
-          onPress={() => router.push("/historico")}
-        >
-          <Ionicons name="time-outline" size={22} color={COLORS.secondary} />
-          <Text style={styles.tabLabel}>Histórico</Text>
-        </Pressable>
-
-        <Pressable
-          style={styles.tabItem}
-          onPress={() => router.push("/conquistas")}
-        >
-          <Ionicons
-            name="trophy-outline"
-            size={22}
-            color={COLORS.secondary}
-          />
-          <Text style={styles.tabLabel}>Conquistas</Text>
-        </Pressable>
-
-        <View style={styles.tabItem}>
-          <Ionicons name="person" size={22} color={COLORS.blue} />
-          <Text style={[styles.tabLabel, styles.tabLabelActive]}>Perfil</Text>
-        </View>
-      </View>
+      <BottomTabBar />
     </SafeAreaView>
   );
 }
@@ -774,28 +726,4 @@ const styles = StyleSheet.create({
     marginLeft: 8,
   },
 
-  tabBar: {
-    flexDirection: "row",
-    backgroundColor: COLORS.white,
-    borderTopWidth: 1,
-    borderTopColor: "#EEF1F6",
-    paddingTop: 8,
-    paddingBottom: 10,
-  },
-
-  tabItem: {
-    flex: 1,
-    alignItems: "center",
-  },
-
-  tabLabel: {
-    color: COLORS.secondary,
-    fontSize: 10,
-    fontWeight: "600",
-    marginTop: 3,
-  },
-
-  tabLabelActive: {
-    color: COLORS.blue,
-  },
 });
