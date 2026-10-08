@@ -13,7 +13,7 @@ import {
   View,
 } from "react-native";
 import BottomTabBar from "../../components/BottomTabBar";
-import { Categoria, listarCategorias, listarLocais, Local } from "../../lib/locais";
+import { Categoria, listarCategorias, listarLocais, Local } from "../../services/locais";
 
 const COLORS = {
   blue: "#0757D8",

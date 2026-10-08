@@ -11,8 +11,8 @@ import {
   View,
 } from "react-native";
 import BottomTabBar from "../../components/BottomTabBar";
-import { useAuth } from "../../contexts/AuthContext";
-import { getSenhaAtiva, SenhaAtiva } from "../../lib/senhas";
+import { useAuth } from "../../hooks/useAuth";
+import { getSenhaAtiva, SenhaAtiva } from "../../services/senhas";
 
 const COLORS = {
   blue: "#0757D8",
