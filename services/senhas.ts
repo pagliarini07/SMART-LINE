@@ -100,3 +100,147 @@ export async function getSenhaAtiva(
     tempoEstimadoMinutos: posicao * tempoMedio,
   };
 }
+
+export type StatusAtendimento =
+  | "atendido"
+  | "cancelado"
+  | "nao_compareceu";
+
+export type AtendimentoHistorico = {
+  id: string;
+  servico: string;
+  local: string;
+  data: string;
+  hora: string;
+  status: StatusAtendimento;
+};
+
+type SenhaHistoricoRow = {
+  id: string;
+  servico_id: string;
+  status: StatusAtendimento;
+  retirada_em: string;
+  atendido_em: string | null;
+  finalizado_em: string | null;
+};
+
+export async function getHistoricoSenhas(
+  userId: string
+): Promise<AtendimentoHistorico[]> {
+  const { data: senhas, error } = await supabase
+    .from("senhas")
+    .select(
+      "id, servico_id, status, retirada_em, atendido_em, finalizado_em"
+    )
+    .eq("usuario_id", userId)
+    .in("status", STATUS_FINALIZADOS)
+    .order("retirada_em", { ascending: false });
+
+  if (error) {
+    throw error;
+  }
+
+  if (!senhas || senhas.length === 0) {
+    return [];
+  }
+
+  const linhas = senhas as SenhaHistoricoRow[];
+
+  const servicoIds = [
+    ...new Set(
+      linhas.map((senha) => senha.servico_id)
+    ),
+  ];
+
+  const {
+    data: servicos,
+    error: servicosError,
+  } = await supabase
+    .from("servicos")
+    .select("id, titulo, local_id")
+    .in("id", servicoIds);
+
+  if (servicosError) {
+    throw servicosError;
+  }
+
+  const localIds = [
+    ...new Set(
+      (servicos ?? [])
+        .map((servico) => servico.local_id)
+        .filter(
+          (id): id is string => Boolean(id)
+        )
+    ),
+  ];
+
+  let locais: {
+    id: string;
+    nome: string;
+  }[] = [];
+
+  if (localIds.length > 0) {
+    const {
+      data,
+      error: locaisError,
+    } = await supabase
+      .from("locais")
+      .select("id, nome")
+      .in("id", localIds);
+
+    if (locaisError) {
+      throw locaisError;
+    }
+
+    locais = data ?? [];
+  }
+
+  const servicosPorId = new Map(
+    (servicos ?? []).map((servico) => [
+      servico.id,
+      servico,
+    ])
+  );
+
+  const locaisPorId = new Map(
+    locais.map((local) => [
+      local.id,
+      local.nome,
+    ])
+  );
+
+  return linhas.map((senha) => {
+    const servico = servicosPorId.get(
+      senha.servico_id
+    );
+
+    const dataHora = new Date(
+      senha.finalizado_em ??
+        senha.atendido_em ??
+        senha.retirada_em
+    );
+
+    return {
+      id: senha.id,
+      servico:
+        servico?.titulo ?? "Serviço",
+      local:
+        (servico?.local_id &&
+          locaisPorId.get(
+            servico.local_id
+          )) ||
+        "Local não informado",
+      data: dataHora.toLocaleDateString(
+        "pt-BR"
+      ),
+      hora: dataHora.toLocaleTimeString(
+        "pt-BR",
+        {
+          hour: "2-digit",
+          minute: "2-digit",
+        }
+      ),
+      status: senha.status,
+    };
+  });
+}
