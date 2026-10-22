@@ -25,6 +25,7 @@ function queryBuilder(resultado: ResultadoMock) {
     not: jest.fn(() => builder),
     order: jest.fn(() => builder),
     limit: jest.fn(() => builder),
+    range: jest.fn(() => builder),
     lte: jest.fn(() => builder),
     maybeSingle: jest.fn(() => Promise.resolve(resultado)),
     single: jest.fn(() => Promise.resolve(resultado)),
@@ -115,7 +116,7 @@ describe("getHistoricoSenhas", () => {
 
     const resultado = await getHistoricoSenhas("usuario-1");
 
-    expect(resultado).toEqual([]);
+    expect(resultado).toEqual({ itens: [], temMais: false });
   });
 
   it("junta senha + servico + local e formata data/hora em pt-BR", async () => {
@@ -156,12 +157,76 @@ describe("getHistoricoSenhas", () => {
 
     const resultado = await getHistoricoSenhas("usuario-1");
 
-    expect(resultado).toHaveLength(1);
-    expect(resultado[0]).toMatchObject({
+    expect(resultado.temMais).toBe(false);
+    expect(resultado.itens).toHaveLength(1);
+    expect(resultado.itens[0]).toMatchObject({
       id: "senha-1",
       servico: "Emissão de documentos",
       local: "Resolve Palmas",
       status: "atendido",
     });
+  });
+
+  it("busca só a página pedida e indica quando há mais registros", async () => {
+    // Página de 2 itens: o banco devolve 3 (um a mais) => temMais = true.
+    const senhasBuilder = queryBuilder({
+      data: ["senha-3", "senha-4", "senha-5"].map((id) => ({
+        id,
+        servico_id: "servico-1",
+        status: "cancelado",
+        retirada_em: "2026-01-01T10:00:00.000Z",
+        atendido_em: null,
+        finalizado_em: null,
+      })),
+      error: null,
+    });
+
+    mockFrom
+      .mockReturnValueOnce(senhasBuilder)
+      .mockReturnValueOnce(
+        queryBuilder({
+          data: [{ id: "servico-1", titulo: "Protocolo", local_id: null }],
+          error: null,
+        })
+      );
+
+    const resultado = await getHistoricoSenhas("usuario-1", 1, 2);
+
+    expect(senhasBuilder.range).toHaveBeenCalledWith(2, 4);
+    expect(resultado.temMais).toBe(true);
+    expect(resultado.itens.map((item) => item.id)).toEqual([
+      "senha-3",
+      "senha-4",
+    ]);
+  });
+
+  it("indica que não há mais registros na última página", async () => {
+    mockFrom
+      .mockReturnValueOnce(
+        queryBuilder({
+          data: [
+            {
+              id: "senha-1",
+              servico_id: "servico-1",
+              status: "atendido",
+              retirada_em: "2026-01-01T10:00:00.000Z",
+              atendido_em: null,
+              finalizado_em: null,
+            },
+          ],
+          error: null,
+        })
+      )
+      .mockReturnValueOnce(
+        queryBuilder({
+          data: [{ id: "servico-1", titulo: "Protocolo", local_id: null }],
+          error: null,
+        })
+      );
+
+    const resultado = await getHistoricoSenhas("usuario-1", 0, 2);
+
+    expect(resultado.temMais).toBe(false);
+    expect(resultado.itens).toHaveLength(1);
   });
 });

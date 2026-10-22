@@ -73,6 +73,10 @@ export default function Historico() {
   const [historico, setHistorico] = useState<AtendimentoHistorico[]>([]);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState("");
+  const [pagina, setPagina] = useState(0);
+  const [temMais, setTemMais] = useState(false);
+  const [carregandoMais, setCarregandoMais] = useState(false);
+  const [erroMais, setErroMais] = useState("");
 
   useEffect(() => {
     async function carregarHistorico() {
@@ -84,9 +88,11 @@ export default function Historico() {
       try {
         setErro("");
 
-        const dados = await getHistoricoSenhas(user.id);
+        const { itens, temMais: haMais } = await getHistoricoSenhas(user.id);
 
-        setHistorico(dados);
+        setHistorico(itens);
+        setPagina(0);
+        setTemMais(haMais);
       } catch (error) {
         console.error("Erro ao carregar histórico:", error);
         setErro("Não foi possível carregar seu histórico agora.");
@@ -97,6 +103,40 @@ export default function Historico() {
 
     carregarHistorico();
   }, [user]);
+
+  async function carregarMais() {
+    if (!user || carregandoMais || !temMais) {
+      return;
+    }
+
+    setCarregandoMais(true);
+    setErroMais("");
+
+    try {
+      const proximaPagina = pagina + 1;
+      const { itens, temMais: haMais } = await getHistoricoSenhas(
+        user.id,
+        proximaPagina
+      );
+
+      // Se uma senha nova foi finalizada entre uma página e outra, a
+      // lista "anda" e o primeiro item da próxima página pode repetir.
+      setHistorico((atual) => {
+        const idsAtuais = new Set(atual.map((item) => item.id));
+        return [
+          ...atual,
+          ...itens.filter((item) => !idsAtuais.has(item.id)),
+        ];
+      });
+      setPagina(proximaPagina);
+      setTemMais(haMais);
+    } catch (error) {
+      console.error("Erro ao carregar mais histórico:", error);
+      setErroMais("Não foi possível carregar mais agora. Tente de novo.");
+    } finally {
+      setCarregandoMais(false);
+    }
+  }
 
   return (
     <SafeAreaView style={styles.screen}>
@@ -129,6 +169,7 @@ export default function Historico() {
         </View>
       ) : historico.length > 0 ? (
         <ScrollView
+          style={styles.scroll}
           contentContainerStyle={styles.list}
           showsVerticalScrollIndicator={false}
         >
@@ -197,6 +238,27 @@ export default function Historico() {
               </View>
             );
           })}
+
+          {erroMais ? (
+            <Text style={styles.loadMoreError}>{erroMais}</Text>
+          ) : null}
+
+          {temMais && (
+            <Pressable
+              style={[
+                styles.loadMoreButton,
+                carregandoMais && styles.loadMoreButtonDisabled,
+              ]}
+              onPress={carregarMais}
+              disabled={carregandoMais}
+            >
+              {carregandoMais ? (
+                <ActivityIndicator color={COLORS.blue} />
+              ) : (
+                <Text style={styles.loadMoreText}>Carregar mais</Text>
+              )}
+            </Pressable>
+          )}
         </ScrollView>
       ) : (
         <View style={styles.emptyState}>
@@ -273,9 +335,16 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
 
+  scroll: {
+    flex: 1,
+  },
+
+  // A BottomTabBar é position: absolute e fica por cima da lista — o
+  // paddingBottom (igual ao de locais.tsx) deixa o fim da lista e o
+  // "Carregar mais" acima dela.
   list: {
     paddingHorizontal: 16,
-    paddingBottom: 20,
+    paddingBottom: 90,
   },
 
   card: {
@@ -334,6 +403,34 @@ const styles = StyleSheet.create({
     color: COLORS.secondary,
     fontSize: 11.5,
     marginLeft: 6,
+  },
+
+  loadMoreButton: {
+    height: 46,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: COLORS.borderBlue,
+    backgroundColor: COLORS.white,
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 4,
+  },
+
+  loadMoreButtonDisabled: {
+    opacity: 0.7,
+  },
+
+  loadMoreText: {
+    color: COLORS.blue,
+    fontSize: 14,
+    fontWeight: "700",
+  },
+
+  loadMoreError: {
+    color: COLORS.red,
+    fontSize: 12,
+    textAlign: "center",
+    marginBottom: 8,
   },
 
   emptyState: {
