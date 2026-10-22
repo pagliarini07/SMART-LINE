@@ -16,7 +16,12 @@ import {
   contarNaoLidas,
   notificarSeProximo,
 } from "../../services/notificacoes";
-import { getSenhaAtiva, SenhaAtiva } from "../../services/senhas";
+import {
+  cancelarSenha,
+  getSenhaAtiva,
+  mensagemErroCancelamento,
+  SenhaAtiva,
+} from "../../services/senhas";
 
 const COLORS = {
   blue: "#0757D8",
@@ -36,6 +41,9 @@ export default function MinhaSenha() {
   const [erro, setErro] = useState("");
   const [senhaAtiva, setSenhaAtiva] = useState<SenhaAtiva | null>(null);
   const [naoLidas, setNaoLidas] = useState(0);
+  const [saindo, setSaindo] = useState(false);
+  const [erroSair, setErroSair] = useState("");
+  const [saiuDaFila, setSaiuDaFila] = useState(false);
 
   useEffect(() => {
     async function carregarSenha() {
@@ -72,6 +80,26 @@ export default function MinhaSenha() {
 
     carregarSenha();
   }, [user]);
+
+  async function sairDaFila() {
+    if (!senhaAtiva || saindo) {
+      return;
+    }
+
+    setSaindo(true);
+    setErroSair("");
+
+    try {
+      await cancelarSenha(senhaAtiva.id);
+      setSenhaAtiva(null);
+      setSaiuDaFila(true);
+    } catch (error) {
+      console.error("Erro ao sair da fila:", error);
+      setErroSair(mensagemErroCancelamento(error));
+    } finally {
+      setSaindo(false);
+    }
+  }
 
   return (
     <SafeAreaView style={styles.screen}>
@@ -136,14 +164,20 @@ export default function MinhaSenha() {
               </Text>
             </View>
 
-            {/* TODO: ainda só limpa a tela localmente — cancelar a senha de
-                verdade (status = "cancelado" em senhas) é escopo da
-                integração de mutações (issue #42). */}
+            {erroSair ? (
+              <Text style={styles.leaveError}>{erroSair}</Text>
+            ) : null}
+
             <Pressable
-              style={styles.leaveButton}
-              onPress={() => setSenhaAtiva(null)}
+              style={[styles.leaveButton, saindo && styles.leaveButtonDisabled]}
+              onPress={sairDaFila}
+              disabled={saindo}
             >
-              <Text style={styles.leaveButtonText}>Sair da fila</Text>
+              {saindo ? (
+                <ActivityIndicator color="#D32F2F" />
+              ) : (
+                <Text style={styles.leaveButtonText}>Sair da fila</Text>
+              )}
             </Pressable>
           </>
         ) : (
@@ -156,10 +190,14 @@ export default function MinhaSenha() {
               />
             </View>
 
-            <Text style={styles.emptyTitle}>Nenhuma senha retirada</Text>
+            <Text style={styles.emptyTitle}>
+              {saiuDaFila ? "Você saiu da fila" : "Nenhuma senha retirada"}
+            </Text>
             <Text style={styles.emptyDescription}>
               {erro ||
-                "Escolha um serviço para retirar sua senha digital e acompanhar a fila em tempo real."}
+                (saiuDaFila
+                  ? "Sua senha foi cancelada e já aparece no seu Histórico."
+                  : "Escolha um serviço para retirar sua senha digital e acompanhar a fila em tempo real.")}
             </Text>
 
             <Pressable
@@ -349,6 +387,17 @@ const styles = StyleSheet.create({
     color: "#D32F2F",
     fontSize: 14,
     fontWeight: "700",
+  },
+
+  leaveButtonDisabled: {
+    opacity: 0.7,
+  },
+
+  leaveError: {
+    color: "#D32F2F",
+    fontSize: 12.5,
+    textAlign: "center",
+    marginTop: 16,
   },
 
   emptyState: {

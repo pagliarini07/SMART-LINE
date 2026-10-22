@@ -148,6 +148,41 @@ export async function retirarSenha(
   return novaSenha;
 }
 
+/**
+ * Cancela ("Sair da fila") a senha em aberto do usuário logado, via a
+ * função cancelar_senha do banco (status -> "cancelado").
+ *
+ * Se a senha já tiver saído da fila por outro motivo (ex.: foi atendida
+ * enquanto a tela estava aberta), não trata como erro: o resultado pro
+ * usuário é o mesmo — ele não está mais na fila.
+ */
+export async function cancelarSenha(senhaId: string): Promise<void> {
+  const { error } = await supabase.rpc("cancelar_senha", {
+    p_senha_id: senhaId,
+  });
+
+  if (error && error.code !== "P0002") {
+    throw error;
+  }
+}
+
+/**
+ * Mensagem amigável pra falha ao sair da fila (rede fora, banco fora etc.).
+ */
+export function mensagemErroCancelamento(error: unknown): string {
+  // Erros do supabase-js nem sempre são instâncias de Error, mas sempre
+  // têm "message".
+  const mensagem = String(
+    (error as { message?: unknown } | null)?.message ?? ""
+  ).toLowerCase();
+
+  if (mensagem.includes("failed to fetch") || mensagem.includes("network")) {
+    return "Sem conexão com o servidor. Verifique sua internet e tente sair da fila novamente.";
+  }
+
+  return "Não foi possível sair da fila agora. Tente novamente.";
+}
+
 export type StatusAtendimento =
   | "atendido"
   | "cancelado"
