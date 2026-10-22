@@ -13,7 +13,9 @@ import {
   View,
 } from "react-native";
 import BottomTabBar from "../../components/BottomTabBar";
+import { useAuth } from "../../hooks/useAuth";
 import { Categoria, listarCategorias, listarLocais, Local } from "../../services/locais";
+import { getProfile } from "../../services/profiles";
 
 const COLORS = {
   blue: "#0757D8",
@@ -32,12 +34,60 @@ const COLORS = {
 const CATEGORIA_TODOS = "todos";
 
 export default function Locais() {
+  const { user } = useAuth();
+
+  const [nomeUsuario, setNomeUsuario] = useState(
+    String(user?.user_metadata?.nome ?? "").trim().split(" ")[0] ||
+      user?.email?.split("@")[0] ||
+      ""
+  );
   const [categoriaAtiva, setCategoriaAtiva] = useState(CATEGORIA_TODOS);
   const [busca, setBusca] = useState("");
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState("");
   const [locais, setLocais] = useState<Local[]>([]);
   const [categorias, setCategorias] = useState<Categoria[]>([]);
+
+  useEffect(() => {
+    async function carregarNomeUsuario() {
+      if (!user) {
+        setNomeUsuario("");
+        return;
+      }
+
+      const nomeFallback =
+        String(user.user_metadata?.nome ?? "").trim() ||
+        user.email?.split("@")[0] ||
+        "";
+
+      setNomeUsuario(nomeFallback.split(" ")[0]);
+
+      try {
+        const perfil = await getProfile(user.id);
+
+        const nomeCompleto =
+          perfil?.nome?.trim() ||
+          String(user.user_metadata?.nome ?? "").trim() ||
+          user.email?.split("@")[0] ||
+          "";
+
+        const primeiroNome = nomeCompleto.split(" ")[0];
+
+        setNomeUsuario(primeiroNome);
+      } catch (error) {
+        console.error("Erro ao carregar nome do usuário:", error);
+
+        const nomeFallback =
+          String(user.user_metadata?.nome ?? "").trim() ||
+          user.email?.split("@")[0] ||
+          "";
+
+        setNomeUsuario(nomeFallback.split(" ")[0]);
+      }
+    }
+
+    carregarNomeUsuario();
+  }, [user]);
 
   useEffect(() => {
     async function carregarDados() {
@@ -119,7 +169,9 @@ export default function Locais() {
           </View>
         </View>
 
-        <Text style={styles.hello}>Olá, Lucas!</Text>
+        <Text style={styles.hello}>
+          {nomeUsuario ? `Olá, ${nomeUsuario}!` : "Olá!"}
+        </Text>
         <Text style={styles.help}>Como podemos te ajudar hoje?</Text>
       </View>
 
