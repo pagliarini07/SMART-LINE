@@ -86,6 +86,7 @@ describe("getSenhaAtiva", () => {
 
     expect(resultado).toEqual({
       id: "senha-1",
+      servicoId: "servico-1",
       codigo: "A003",
       servico: "Emissão de documentos",
       local: "Resolve Palmas",

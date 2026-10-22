@@ -7,6 +7,7 @@ const STATUS_FINALIZADOS = ["atendido", "cancelado", "nao_compareceu"];
 
 export type SenhaAtiva = {
   id: string;
+  servicoId: string;
   codigo: string;
   servico: string;
   local: string;
@@ -93,12 +94,58 @@ export async function getSenhaAtiva(
 
   return {
     id: senha.id,
+    servicoId: senha.servico_id,
     codigo: `${prefixo}${String(posicao).padStart(3, "0")}`,
     servico: servico?.titulo ?? "Serviço",
     local: nomeLocal,
     posicao,
     tempoEstimadoMinutos: posicao * tempoMedio,
   };
+}
+
+/**
+ * Retira uma senha real para o serviço informado.
+ *
+ * Se o usuário já estiver na fila desse mesmo serviço, reaproveita
+ * a senha existente em vez de criar outra.
+ */
+export async function retirarSenha(
+  userId: string,
+  servicoId: string
+): Promise<SenhaAtiva> {
+  const senhaAtual = await getSenhaAtiva(userId);
+
+  if (senhaAtual) {
+    if (senhaAtual.servicoId === servicoId) {
+      return senhaAtual;
+    }
+
+    throw new Error("Você já possui uma senha ativa em outro serviço.");
+  }
+
+  const { error } = await supabase.rpc("entrar_na_fila", {
+    p_servico_id: servicoId,
+  });
+
+  if (error) {
+    // Se duas chamadas acontecerem quase ao mesmo tempo, a outra pode
+    // ter criado a senha antes. Nesse caso, reaproveitamos a senha.
+    const senhaAposErro = await getSenhaAtiva(userId).catch(() => null);
+
+    if (senhaAposErro?.servicoId === servicoId) {
+      return senhaAposErro;
+    }
+
+    throw error;
+  }
+
+  const novaSenha = await getSenhaAtiva(userId);
+
+  if (!novaSenha || novaSenha.servicoId !== servicoId) {
+    throw new Error("Não foi possível carregar a senha retirada.");
+  }
+
+  return novaSenha;
 }
 
 export type StatusAtendimento =
