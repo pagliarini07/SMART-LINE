@@ -1,6 +1,8 @@
 import { Ionicons } from "@expo/vector-icons";
-import { router } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
+import { useEffect, useState } from "react";
 import {
+  ActivityIndicator,
   Pressable,
   SafeAreaView,
   ScrollView,
@@ -10,6 +12,10 @@ import {
   View,
 } from "react-native";
 import BottomTabBar from "../../components/BottomTabBar";
+import {
+  DadosServicosLocal,
+  listarServicosPorLocal,
+} from "../../services/servicos";
 
 const COLORS = {
   blue: "#0757D8",
@@ -24,68 +30,57 @@ const COLORS = {
   yellowSoft: "#FFF3D6",
 };
 
-type Servico = {
-  id: string;
-  icon: keyof typeof Ionicons.glyphMap;
-  iconColor: string;
-  iconBackground: string;
-  titulo: string;
-  descricao: string;
-  setor: string;
-  pessoasAguardando: number;
-};
-
-const UNIDADE = {
-  nome: "Resolve Palmas — Centro",
-  endereco: "Av. JK, 104 Norte, Palmas – TO",
-  aberto: true,
-  pessoasAguardando: 18,
-};
-
-const SERVICOS: Servico[] = [
-  {
-    id: "documentos",
-    icon: "document-text-outline",
-    iconColor: COLORS.blue,
-    iconBackground: COLORS.lightBlue,
-    titulo: "Emissão de documentos",
-    descricao: "RG, CPF, CNH e 2ª via de documentos.",
-    setor: "Identificação",
-    pessoasAguardando: 8,
-  },
-  {
-    id: "tributario",
-    icon: "cash-outline",
-    iconColor: "#C9930B",
-    iconBackground: COLORS.yellowSoft,
-    titulo: "Atendimento tributário",
-    descricao: "IPTU, ITBI, Alvará e demais tributos.",
-    setor: "Tributos",
-    pessoasAguardando: 5,
-  },
-  {
-    id: "idoso",
-    icon: "person-circle-outline",
-    iconColor: COLORS.white,
-    iconBackground: COLORS.blue,
-    titulo: "Credencial do idoso",
-    descricao: "Emissão e renovação da credencial.",
-    setor: "Assistência Social",
-    pessoasAguardando: 3,
-  },
-  {
-    id: "protocolo",
-    icon: "reader-outline",
-    iconColor: COLORS.blue,
-    iconBackground: COLORS.lightBlue,
-    titulo: "Protocolo geral",
-    descricao: "Protocolos, requerimentos e processos.",
-    setor: "Protocolo",
-    pessoasAguardando: 2,
-  },
-];
-
 export default function Inicio() {
+  const { localId } = useLocalSearchParams<{ localId?: string }>();
+
+  const [dados, setDados] = useState<DadosServicosLocal | null>(null);
+  const [carregando, setCarregando] = useState(true);
+  const [erro, setErro] = useState("");
+
+  useEffect(() => {
+    let montado = true;
+
+    async function carregarServicos() {
+      if (!localId) {
+        if (montado) {
+          setErro("Local não informado.");
+          setCarregando(false);
+        }
+        return;
+      }
+
+      try {
+        setCarregando(true);
+        setErro("");
+
+        const resultado = await listarServicosPorLocal(localId);
+
+        if (montado) {
+          setDados(resultado);
+        }
+      } catch (error) {
+        console.error("Erro ao carregar serviços:", error);
+
+        if (montado) {
+          setErro("Não foi possível carregar os serviços agora.");
+        }
+      } finally {
+        if (montado) {
+          setCarregando(false);
+        }
+      }
+    }
+
+    carregarServicos();
+
+    return () => {
+      montado = false;
+    };
+  }, [localId]);
+
+  const unidade = dados?.unidade;
+  const servicos = dados?.servicos ?? [];
+
   return (
     <SafeAreaView style={styles.screen}>
       <StatusBar barStyle="light-content" backgroundColor={COLORS.blue} />
@@ -123,125 +118,162 @@ export default function Inicio() {
           </View>
         </View>
 
-        {/* CARD DA UNIDADE */}
-        <View style={styles.unitCard}>
-          <View style={styles.unitIcon}>
-            <Ionicons name="grid-outline" size={26} color={COLORS.blue} />
-          </View>
-
-          <View style={styles.unitInfo}>
-            <Text style={styles.unitName}>{UNIDADE.nome}</Text>
-
-            <View style={styles.unitAddressRow}>
-              <Ionicons
-                name="navigate-outline"
-                size={12}
-                color={COLORS.secondary}
-              />
-              <Text style={styles.unitAddress}>{UNIDADE.endereco}</Text>
-            </View>
-
-            <View style={styles.statusPill}>
-              <View style={styles.statusDot} />
-              <Text style={styles.statusText}>
-                {UNIDADE.aberto ? "Aberto" : "Fechado"}
-              </Text>
-            </View>
-          </View>
-
-          <View style={styles.unitWaiting}>
-            <Text style={styles.unitWaitingNumber}>
-              {UNIDADE.pessoasAguardando}
-            </Text>
-            <Text style={styles.unitWaitingLabel}>
-              pessoas{"\n"}aguardando
+        {carregando ? (
+          <ActivityIndicator
+            size="large"
+            color={COLORS.blue}
+            style={{ marginTop: 50 }}
+          />
+        ) : erro ? (
+          <View style={{ paddingHorizontal: 30, paddingVertical: 50 }}>
+            <Text style={[styles.sectionSubtitle, { textAlign: "center" }]}>
+              {erro}
             </Text>
           </View>
-        </View>
-
-        {/* TÍTULO DA SEÇÃO */}
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Serviços disponíveis</Text>
-          <Text style={styles.sectionSubtitle}>
-            Selecione um serviço para ver a fila e mais detalhes.
-          </Text>
-        </View>
-
-        {/* LISTA DE SERVIÇOS */}
-        <View style={styles.serviceList}>
-          {SERVICOS.map((servico) => (
-            <View key={servico.id} style={styles.serviceCard}>
-              <View
-                style={[
-                  styles.serviceIcon,
-                  { backgroundColor: servico.iconBackground },
-                ]}
-              >
-                <Ionicons
-                  name={servico.icon}
-                  size={22}
-                  color={servico.iconColor}
-                />
+        ) : unidade ? (
+          <>
+            {/* CARD DA UNIDADE */}
+            <View style={styles.unitCard}>
+              <View style={styles.unitIcon}>
+                <Ionicons name="grid-outline" size={26} color={COLORS.blue} />
               </View>
 
-              <View style={styles.serviceInfo}>
-                <Text style={styles.serviceTitle}>{servico.titulo}</Text>
-                <Text style={styles.serviceDescription}>
-                  {servico.descricao}
-                </Text>
-                <Text style={styles.serviceSector}>
-                  Setor: {servico.setor}
-                </Text>
+              <View style={styles.unitInfo}>
+                <Text style={styles.unitName}>{unidade.nome}</Text>
 
-                <View style={styles.serviceWaitingRow}>
+                <View style={styles.unitAddressRow}>
                   <Ionicons
-                    name="ellipse"
-                    size={5}
+                    name="navigate-outline"
+                    size={12}
                     color={COLORS.secondary}
                   />
-                  <Ionicons
-                    name="ellipse"
-                    size={5}
-                    color={COLORS.secondary}
-                    style={{ marginLeft: 2 }}
-                  />
-                  <Text style={styles.serviceWaitingText}>
-                    {servico.pessoasAguardando} pessoas aguardando
+                  <Text style={styles.unitAddress}>{unidade.endereco}</Text>
+                </View>
+
+                <View style={styles.statusPill}>
+                  <View style={styles.statusDot} />
+                  <Text style={styles.statusText}>
+                    {unidade.aberto ? "Aberto" : "Fechado"}
                   </Text>
                 </View>
               </View>
 
-              <Pressable
-                style={styles.queueButton}
-                onPress={() =>
-                  router.push({
-                    pathname: "/fila",
-                    params: { servicoId: servico.id },
-                  } as never)
-                }
-              >
-                <Text style={styles.queueButtonText}>Ver fila</Text>
-                <Ionicons name="chevron-forward" size={14} color={COLORS.blue} />
+              <View style={styles.unitWaiting}>
+                <Text style={styles.unitWaitingNumber}>
+                  {unidade.pessoasAguardando}
+                </Text>
+                <Text style={styles.unitWaitingLabel}>
+                  pessoas{"\n"}aguardando
+                </Text>
+              </View>
+            </View>
+
+            {/* TÍTULO DA SEÇÃO */}
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>Serviços disponíveis</Text>
+              <Text style={styles.sectionSubtitle}>
+                Selecione um serviço para ver a fila e mais detalhes.
+              </Text>
+            </View>
+
+            {/* LISTA DE SERVIÇOS */}
+            <View style={styles.serviceList}>
+              {servicos.length > 0 ? (
+                servicos.map((servico) => (
+                  <View key={servico.id} style={styles.serviceCard}>
+                    <View
+                      style={[
+                        styles.serviceIcon,
+                        { backgroundColor: servico.iconBackground },
+                      ]}
+                    >
+                      <Ionicons
+                        name={servico.icon}
+                        size={22}
+                        color={servico.iconColor}
+                      />
+                    </View>
+
+                    <View style={styles.serviceInfo}>
+                      <Text style={styles.serviceTitle}>{servico.titulo}</Text>
+
+                      <Text style={styles.serviceDescription}>
+                        {servico.descricao}
+                      </Text>
+
+                      <Text style={styles.serviceSector}>
+                        Setor: {servico.setor}
+                      </Text>
+
+                      <View style={styles.serviceWaitingRow}>
+                        <Ionicons
+                          name="ellipse"
+                          size={5}
+                          color={COLORS.secondary}
+                        />
+                        <Ionicons
+                          name="ellipse"
+                          size={5}
+                          color={COLORS.secondary}
+                          style={{ marginLeft: 2 }}
+                        />
+                        <Text style={styles.serviceWaitingText}>
+                          {servico.pessoasAguardando} pessoas aguardando
+                        </Text>
+                      </View>
+                    </View>
+
+                    <Pressable
+                      style={styles.queueButton}
+                      onPress={() =>
+                        router.push({
+                          pathname: "/fila",
+                          params: { servicoId: servico.id },
+                        } as never)
+                      }
+                    >
+                      <Text style={styles.queueButtonText}>Ver fila</Text>
+                      <Ionicons
+                        name="chevron-forward"
+                        size={14}
+                        color={COLORS.blue}
+                      />
+                    </Pressable>
+                  </View>
+                ))
+              ) : (
+                <Text
+                  style={[
+                    styles.sectionSubtitle,
+                    { textAlign: "center", paddingVertical: 30 },
+                  ]}
+                >
+                  Nenhum serviço disponível neste local.
+                </Text>
+              )}
+            </View>
+
+            {/* LEMBRETE */}
+            <View style={styles.reminderCard}>
+              <Ionicons
+                name="time-outline"
+                size={20}
+                color={COLORS.blue}
+              />
+
+              <View style={styles.reminderText}>
+                <Text style={styles.reminderTitle}>Vai sair?</Text>
+                <Text style={styles.reminderDescription}>
+                  Ajude a manter as filas atualizadas.
+                </Text>
+              </View>
+
+              <Pressable style={styles.reminderButton}>
+                <Text style={styles.reminderButtonText}>Informar saída</Text>
               </Pressable>
             </View>
-          ))}
-        </View>
-
-        {/* LEMBRETE */}
-        <View style={styles.reminderCard}>
-          <Ionicons name="time-outline" size={20} color={COLORS.blue} />
-
-          <View style={styles.reminderText}>
-            <Text style={styles.reminderTitle}>Vai sair?</Text>
-            <Text style={styles.reminderDescription}>
-              Ajude a manter as filas atualizadas.
-            </Text>
-          </View>
-
-          <Pressable style={styles.reminderButton}>
-            <Text style={styles.reminderButtonText}>Informar saída</Text>
-          </Pressable>
-        </View>
+          </>
+        ) : null}
       </ScrollView>
 
       {/* BARRA INFERIOR */}
