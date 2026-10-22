@@ -72,12 +72,21 @@ export default function Login() {
         </Text>
 
         <TextInput
-          style={styles.input}
+          style={styles.inputSenha}
           placeholder="Digite sua senha"
           secureTextEntry
           value={password}
           onChangeText={setPassword}
         />
+
+        <Pressable
+          onPress={() => router.push("/forgot-password")}
+          accessibilityRole="button"
+        >
+          <Text style={styles.forgotPasswordText}>
+            Esqueci minha senha
+          </Text>
+        </Pressable>
 
         {error ? (
             <Text style={styles.errorText}>
@@ -147,6 +156,17 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
 
+    inputSenha: {
+    height: 50,
+    backgroundColor: "#FFFFFF",
+    borderWidth: 1,
+    borderColor: "#D9E0EA",
+    borderRadius: 12,
+    paddingHorizontal: 15,
+    marginBottom: 12,
+    fontSize: 16,
+  },
+
   loginButton: {
     height: 50,
     backgroundColor: "#0D5BD7",
@@ -169,11 +189,13 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: "600",
   },
+
   errorText: {
     color: "#D32F2F",
     fontSize: 14,
     marginBottom: 12,
   },
+
   backButton: {
     marginTop: 20,
     marginLeft: 20,
@@ -183,5 +205,15 @@ const styles = StyleSheet.create({
     backgroundColor: "#0757D8",
     alignItems: "center",
     justifyContent: "center",
-  }
+  },
+
+  forgotPasswordText:{
+    color: "#0D5BD7",
+    fontSize: 14,
+    fontWeight: "600",
+    textAlign: "right",
+    marginTop: -8,
+    marginBottom: 18,
+  },
+
 });
