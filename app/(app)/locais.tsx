@@ -60,8 +60,11 @@ export default function Locais() {
     carregarDados();
   }, []);
 
-  const abrirServicos = () => {
-    router.push("/servicos" as never);
+  const abrirServicos = (localId: string) => {
+    router.push({
+      pathname: "/servicos",
+      params: { localId },
+    } as never);
   };
   const abrirAvaliacao = (localId: string) => {
     router.push(`/avaliar/${localId}` as never);
@@ -320,7 +323,7 @@ export default function Locais() {
 
                     <Pressable
                       style={styles.servicesButton}
-                      onPress={abrirServicos}
+                      onPress={() => abrirServicos(local.id)}
                     >
                       <Text style={styles.servicesButtonText}>
                         Ver serviços
