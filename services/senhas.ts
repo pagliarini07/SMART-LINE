@@ -171,9 +171,25 @@ type SenhaHistoricoRow = {
   finalizado_em: string | null;
 };
 
+export const HISTORICO_POR_PAGINA = 15;
+
+export type PaginaHistorico = {
+  itens: AtendimentoHistorico[];
+  temMais: boolean;
+};
+
+/**
+ * Busca uma página do histórico do usuário (mais recentes primeiro).
+ * `pagina` começa em 0. Pede um registro a mais que o tamanho da página
+ * só pra saber se ainda existe uma próxima, sem precisar de count.
+ */
 export async function getHistoricoSenhas(
-  userId: string
-): Promise<AtendimentoHistorico[]> {
+  userId: string,
+  pagina = 0,
+  tamanho = HISTORICO_POR_PAGINA
+): Promise<PaginaHistorico> {
+  const inicio = pagina * tamanho;
+
   const { data: senhas, error } = await supabase
     .from("senhas")
     .select(
@@ -181,17 +197,22 @@ export async function getHistoricoSenhas(
     )
     .eq("usuario_id", userId)
     .in("status", STATUS_FINALIZADOS)
-    .order("retirada_em", { ascending: false });
+    .order("retirada_em", { ascending: false })
+    // Desempate estável: sem isso, senhas com o mesmo retirada_em
+    // poderiam pular ou repetir entre uma página e outra.
+    .order("id", { ascending: false })
+    .range(inicio, inicio + tamanho);
 
   if (error) {
     throw error;
   }
 
   if (!senhas || senhas.length === 0) {
-    return [];
+    return { itens: [], temMais: false };
   }
 
-  const linhas = senhas as SenhaHistoricoRow[];
+  const temMais = senhas.length > tamanho;
+  const linhas = senhas.slice(0, tamanho) as SenhaHistoricoRow[];
 
   const servicoIds = [
     ...new Set(
@@ -256,7 +277,7 @@ export async function getHistoricoSenhas(
     ])
   );
 
-  return linhas.map((senha) => {
+  const itens = linhas.map((senha) => {
     const servico = servicosPorId.get(
       senha.servico_id
     );
@@ -290,4 +311,6 @@ export async function getHistoricoSenhas(
       status: senha.status,
     };
   });
+
+  return { itens, temMais };
 }
