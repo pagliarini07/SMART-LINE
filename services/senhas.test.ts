@@ -1,9 +1,14 @@
 jest.mock("./supabase", () => ({
-  supabase: { from: jest.fn() },
+  supabase: { from: jest.fn(), rpc: jest.fn() },
 }));
 
 import { supabase } from "./supabase";
-import { getHistoricoSenhas, getSenhaAtiva } from "./senhas";
+import {
+  cancelarSenha,
+  getHistoricoSenhas,
+  getSenhaAtiva,
+  mensagemErroCancelamento,
+} from "./senhas";
 
 type ResultadoMock = {
   data?: unknown;
@@ -37,9 +42,11 @@ function queryBuilder(resultado: ResultadoMock) {
 }
 
 const mockFrom = supabase.from as jest.Mock;
+const mockRpc = supabase.rpc as jest.Mock;
 
 beforeEach(() => {
   mockFrom.mockReset();
+  mockRpc.mockReset();
 });
 
 describe("getSenhaAtiva", () => {
@@ -228,5 +235,47 @@ describe("getHistoricoSenhas", () => {
 
     expect(resultado.temMais).toBe(false);
     expect(resultado.itens).toHaveLength(1);
+  });
+});
+
+describe("cancelarSenha", () => {
+  it("chama a função cancelar_senha do banco com o id da senha", async () => {
+    mockRpc.mockResolvedValueOnce({ data: null, error: null });
+
+    await cancelarSenha("senha-1");
+
+    expect(mockRpc).toHaveBeenCalledWith("cancelar_senha", {
+      p_senha_id: "senha-1",
+    });
+  });
+
+  it("não falha se a senha já tinha saído da fila (P0002)", async () => {
+    mockRpc.mockResolvedValueOnce({
+      data: null,
+      error: { code: "P0002", message: "Senha não encontrada ou já finalizada" },
+    });
+
+    await expect(cancelarSenha("senha-1")).resolves.toBeUndefined();
+  });
+
+  it("propaga outros erros do banco", async () => {
+    const erro = { code: "XX000", message: "falha no banco" };
+    mockRpc.mockResolvedValueOnce({ data: null, error: erro });
+
+    await expect(cancelarSenha("senha-1")).rejects.toBe(erro);
+  });
+});
+
+describe("mensagemErroCancelamento", () => {
+  it("explica falta de conexão quando a requisição nem chega no servidor", () => {
+    expect(
+      mensagemErroCancelamento(new TypeError("Failed to fetch"))
+    ).toContain("Sem conexão");
+  });
+
+  it("usa uma mensagem genérica para os demais erros", () => {
+    expect(mensagemErroCancelamento({ message: "falha no banco" })).toBe(
+      "Não foi possível sair da fila agora. Tente novamente."
+    );
   });
 });

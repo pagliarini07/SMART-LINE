@@ -11,7 +11,12 @@ import {
   View,
 } from "react-native";
 import { useAuth } from "../../hooks/useAuth";
-import { retirarSenha, SenhaAtiva } from "../../services/senhas";
+import {
+  cancelarSenha,
+  mensagemErroCancelamento,
+  retirarSenha,
+  SenhaAtiva,
+} from "../../services/senhas";
 
 const COLORS = {
   blue: "#0757D8",
@@ -31,6 +36,8 @@ export default function Fila() {
   const [senha, setSenha] = useState<SenhaAtiva | null>(null);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState("");
+  const [saindo, setSaindo] = useState(false);
+  const [erroSair, setErroSair] = useState("");
 
   useEffect(() => {
     let montado = true;
@@ -87,6 +94,30 @@ export default function Fila() {
       montado = false;
     };
   }, [user, servicoId]);
+
+  async function sairDaFila() {
+    if (!senha || saindo) {
+      return;
+    }
+
+    setSaindo(true);
+    setErroSair("");
+
+    try {
+      await cancelarSenha(senha.id);
+      // Volta pra lista de serviços: a senha cancelada já sai de
+      // "Minha senha" e aparece no Histórico.
+      if (router.canGoBack()) {
+        router.back();
+      } else {
+        router.replace("/locais");
+      }
+    } catch (error) {
+      console.error("Erro ao sair da fila:", error);
+      setErroSair(mensagemErroCancelamento(error));
+      setSaindo(false);
+    }
+  }
 
   return (
     <SafeAreaView style={styles.screen}>
@@ -159,8 +190,20 @@ export default function Fila() {
               </Text>
             </View>
 
-            <Pressable style={styles.leaveButton}>
-              <Text style={styles.leaveButtonText}>Sair da fila</Text>
+            {erroSair ? (
+              <Text style={styles.leaveError}>{erroSair}</Text>
+            ) : null}
+
+            <Pressable
+              style={[styles.leaveButton, saindo && styles.leaveButtonDisabled]}
+              onPress={sairDaFila}
+              disabled={saindo}
+            >
+              {saindo ? (
+                <ActivityIndicator color="#D32F2F" />
+              ) : (
+                <Text style={styles.leaveButtonText}>Sair da fila</Text>
+              )}
             </Pressable>
           </>
         ) : null}
@@ -318,5 +361,16 @@ const styles = StyleSheet.create({
     color: "#D32F2F",
     fontSize: 14,
     fontWeight: "700",
+  },
+
+  leaveButtonDisabled: {
+    opacity: 0.7,
+  },
+
+  leaveError: {
+    color: "#D32F2F",
+    fontSize: 12.5,
+    textAlign: "center",
+    marginTop: 20,
   },
 });
