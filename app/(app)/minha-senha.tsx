@@ -12,6 +12,10 @@ import {
 } from "react-native";
 import BottomTabBar from "../../components/BottomTabBar";
 import { useAuth } from "../../hooks/useAuth";
+import {
+  contarNaoLidas,
+  notificarSeProximo,
+} from "../../services/notificacoes";
 import { getSenhaAtiva, SenhaAtiva } from "../../services/senhas";
 
 const COLORS = {
@@ -31,6 +35,7 @@ export default function MinhaSenha() {
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState("");
   const [senhaAtiva, setSenhaAtiva] = useState<SenhaAtiva | null>(null);
+  const [naoLidas, setNaoLidas] = useState(0);
 
   useEffect(() => {
     async function carregarSenha() {
@@ -42,11 +47,26 @@ export default function MinhaSenha() {
       try {
         const senha = await getSenhaAtiva(user.id);
         setSenhaAtiva(senha);
+
+        // Gatilho real de notificação: se a senha estiver a 1-2 posições
+        // de ser chamada, garante que existe um aviso pra ela (idempotente
+        // no banco, então é seguro chamar toda vez que a tela carrega).
+        if (senha) {
+          notificarSeProximo(user.id, senha).catch((error) => {
+            console.error("Erro ao gerar notificação:", error);
+          });
+        }
       } catch (error) {
         console.error("Erro ao carregar senha ativa:", error);
         setErro("Não foi possível carregar sua senha agora.");
       } finally {
         setCarregando(false);
+      }
+
+      try {
+        setNaoLidas(await contarNaoLidas(user.id));
+      } catch (error) {
+        console.error("Erro ao contar notificações:", error);
       }
     }
 
@@ -62,6 +82,20 @@ export default function MinhaSenha() {
           <Ionicons name="chevron-back" size={22} color={COLORS.white} />
         </Pressable>
         <Text style={styles.headerTitle}>Minha senha</Text>
+
+        <Pressable
+          style={styles.bellButton}
+          onPress={() => router.push("/notificacoes" as never)}
+        >
+          <Ionicons name="notifications-outline" size={20} color={COLORS.blue} />
+          {naoLidas > 0 ? (
+            <View style={styles.bellBadge}>
+              <Text style={styles.bellBadgeText}>
+                {naoLidas > 9 ? "9+" : naoLidas}
+              </Text>
+            </View>
+          ) : null}
+        </Pressable>
       </View>
 
       <View style={styles.content}>
@@ -167,6 +201,39 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     borderWidth: 1,
     borderColor: COLORS.borderBlue,
+  },
+
+  bellButton: {
+    marginLeft: "auto",
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: COLORS.white,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+    borderColor: COLORS.borderBlue,
+  },
+
+  bellBadge: {
+    position: "absolute",
+    top: -4,
+    right: -4,
+    minWidth: 17,
+    height: 17,
+    borderRadius: 9,
+    paddingHorizontal: 3,
+    backgroundColor: "#D32F2F",
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1.5,
+    borderColor: COLORS.background,
+  },
+
+  bellBadgeText: {
+    color: COLORS.white,
+    fontSize: 9.5,
+    fontWeight: "700",
   },
 
   headerTitle: {

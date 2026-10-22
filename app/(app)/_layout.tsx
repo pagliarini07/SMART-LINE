@@ -21,6 +21,7 @@ export default function AppLayout() {
       <Stack.Screen name="perfil" />
       <Stack.Screen name="historico" />
       <Stack.Screen name="conquistas" />
+      <Stack.Screen name="notificacoes" />
     </Stack>
   );
 }
