@@ -1,6 +1,8 @@
 import { Ionicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
+import { useEffect, useState } from "react";
 import {
+  ActivityIndicator,
   Pressable,
   SafeAreaView,
   StatusBar,
@@ -8,6 +10,8 @@ import {
   Text,
   View,
 } from "react-native";
+import { useAuth } from "../../hooks/useAuth";
+import { retirarSenha, SenhaAtiva } from "../../services/senhas";
 
 const COLORS = {
   blue: "#0757D8",
@@ -20,49 +24,146 @@ const COLORS = {
   borderBlue: "#CFE0FF",
 };
 
-// Dados mocados só para exibir a tela — trocar por dados reais
-// (API / estado global) quando a integração de fila for feita.
-const SERVICOS_NOMES: Record<string, string> = {
-  documentos: "Emissão de documentos",
-  tributario: "Atendimento tributário",
-  idoso: "Credencial do idoso",
-  protocolo: "Protocolo geral",
-};
-
 export default function Fila() {
   const { servicoId } = useLocalSearchParams<{ servicoId?: string }>();
-  const nomeServico =
-    (servicoId && SERVICOS_NOMES[servicoId]) || "Serviço selecionado";
+  const { user } = useAuth();
+
+  const [senha, setSenha] = useState<SenhaAtiva | null>(null);
+  const [carregando, setCarregando] = useState(true);
+  const [erro, setErro] = useState("");
+
+  useEffect(() => {
+    let montado = true;
+
+    async function entrarNaFila() {
+      if (!user) {
+        if (montado) {
+          setErro("É necessário estar logado para retirar uma senha.");
+          setCarregando(false);
+        }
+        return;
+      }
+
+      if (!servicoId) {
+        if (montado) {
+          setErro("Serviço não informado.");
+          setCarregando(false);
+        }
+        return;
+      }
+
+      try {
+        setCarregando(true);
+        setErro("");
+
+        const senhaReal = await retirarSenha(user.id, servicoId);
+
+        if (montado) {
+          setSenha(senhaReal);
+        }
+      } catch (error) {
+        console.error("Erro ao retirar senha:", error);
+
+        const mensagem =
+          error instanceof Error ? error.message : "";
+
+        if (montado) {
+          setErro(
+            mensagem.includes("senha ativa")
+              ? mensagem
+              : "Não foi possível entrar na fila agora. Tente novamente."
+          );
+        }
+      } finally {
+        if (montado) {
+          setCarregando(false);
+        }
+      }
+    }
+
+    entrarNaFila();
+
+    return () => {
+      montado = false;
+    };
+  }, [user, servicoId]);
 
   return (
     <SafeAreaView style={styles.screen}>
-      <StatusBar barStyle="light-content" backgroundColor={COLORS.blue} />
+      <StatusBar barStyle="dark-content" backgroundColor={COLORS.background} />
 
       <View style={styles.header}>
         <Pressable style={styles.backButton} onPress={() => router.back()}>
           <Ionicons name="chevron-back" size={22} color={COLORS.white} />
         </Pressable>
-        <Text style={styles.headerTitle}>{nomeServico}</Text>
+
+        <View style={styles.headerInfo}>
+          <Text style={styles.headerTitle}>
+            {senha?.servico ?? "Fila"}
+          </Text>
+
+          {senha?.local ? (
+            <Text style={styles.headerSubtitle}>{senha.local}</Text>
+          ) : null}
+        </View>
       </View>
 
       <View style={styles.content}>
-        <View style={styles.positionCircle}>
-          <Text style={styles.positionNumber}>4º</Text>
-          <Text style={styles.positionLabel}>na fila</Text>
-        </View>
+        {carregando ? (
+          <View style={styles.feedbackContainer}>
+            <ActivityIndicator size="large" color={COLORS.blue} />
+            <Text style={styles.feedbackText}>
+              Retirando sua senha...
+            </Text>
+          </View>
+        ) : erro ? (
+          <View style={styles.feedbackContainer}>
+            <Ionicons
+              name="alert-circle-outline"
+              size={42}
+              color="#D32F2F"
+            />
 
-        <Text style={styles.estimate}>Tempo estimado: ~20 minutos</Text>
+            <Text style={styles.errorText}>{erro}</Text>
 
-        <View style={styles.infoCard}>
-          <Ionicons name="notifications-outline" size={20} color={COLORS.blue} />
-          <Text style={styles.infoText}>
-            Você será avisado quando estiver próximo de ser chamado.
-          </Text>
-        </View>
+            <Pressable
+              style={styles.backToServicesButton}
+              onPress={() => router.back()}
+            >
+              <Text style={styles.backToServicesText}>
+                Voltar aos serviços
+              </Text>
+            </Pressable>
+          </View>
+        ) : senha ? (
+          <>
+            <View style={styles.positionCircle}>
+              <Text style={styles.positionNumber}>
+                {senha.posicao}º
+              </Text>
+              <Text style={styles.positionLabel}>na fila</Text>
+            </View>
 
-        <Pressable style={styles.leaveButton}>
-          <Text style={styles.leaveButtonText}>Sair da fila</Text>
-        </Pressable>
+            <Text style={styles.estimate}>
+              Tempo estimado: ~{senha.tempoEstimadoMinutos} minutos
+            </Text>
+
+            <View style={styles.infoCard}>
+              <Ionicons
+                name="notifications-outline"
+                size={20}
+                color={COLORS.blue}
+              />
+              <Text style={styles.infoText}>
+                Você será avisado quando estiver próximo de ser chamado.
+              </Text>
+            </View>
+
+            <Pressable style={styles.leaveButton}>
+              <Text style={styles.leaveButtonText}>Sair da fila</Text>
+            </Pressable>
+          </>
+        ) : null}
       </View>
     </SafeAreaView>
   );
@@ -93,12 +194,21 @@ const styles = StyleSheet.create({
     borderColor: COLORS.borderBlue,
   },
 
+  headerInfo: {
+    marginLeft: 14,
+    flex: 1,
+  },
+
   headerTitle: {
     color: COLORS.text,
     fontSize: 17,
     fontWeight: "700",
-    marginLeft: 14,
-    flexShrink: 1,
+  },
+
+  headerSubtitle: {
+    color: COLORS.secondary,
+    fontSize: 12,
+    marginTop: 2,
   },
 
   content: {
@@ -106,6 +216,42 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingHorizontal: 30,
     paddingTop: 30,
+  },
+
+  feedbackContainer: {
+    flex: 1,
+    width: "100%",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingBottom: 80,
+  },
+
+  feedbackText: {
+    color: COLORS.secondary,
+    fontSize: 14,
+    marginTop: 14,
+  },
+
+  errorText: {
+    color: COLORS.text,
+    fontSize: 14,
+    textAlign: "center",
+    marginTop: 14,
+    lineHeight: 20,
+  },
+
+  backToServicesButton: {
+    marginTop: 20,
+    backgroundColor: COLORS.blue,
+    borderRadius: 12,
+    paddingHorizontal: 22,
+    paddingVertical: 12,
+  },
+
+  backToServicesText: {
+    color: COLORS.white,
+    fontSize: 14,
+    fontWeight: "700",
   },
 
   positionCircle: {
