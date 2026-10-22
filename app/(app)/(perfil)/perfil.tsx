@@ -1,3 +1,4 @@
+import { validarCPF } from "@/utils/cpf";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { useEffect, useState } from "react";
@@ -69,6 +70,10 @@ export default function Perfil() {
   const [email, setEmail] = useState("");
   const [cpf, setCpf] = useState("");
 
+  const [nomeOriginal, setNomeOriginal] = useState("");
+  const [emailOriginal, setEmailOriginal] = useState("");
+  const [cpfOriginal, setCpfOriginal] = useState("");
+
   const [dadosSequencia, setDadosSequencia] =
     useState<DadosSequencia>({
       atual: 0,
@@ -89,10 +94,18 @@ export default function Perfil() {
       try {
         const perfil = await getProfile(user.id);
 
-        setNome(perfil?.nome ?? "");
-        setEmail(perfil?.email ?? user.email ?? "");
-        setCpf(perfil?.cpf ?? "");
-      } catch {
+        const nomeCarregado = perfil?.nome ?? "";
+        const emailCarregado = perfil?.email ?? user.email ?? "";
+        const cpfCarregado = perfil?.cpf ?? "";
+
+        setNome(nomeCarregado);
+        setEmail(emailCarregado);
+        setCpf(cpfCarregado);
+
+        setNomeOriginal(nomeCarregado);
+        setEmailOriginal(emailCarregado);
+        setCpfOriginal(cpfCarregado);
+      } catch (error) {
         setErro("Não foi possível carregar seus dados agora.");
         setEmail(user.email ?? "");
       } finally {
@@ -145,25 +158,47 @@ export default function Perfil() {
       return;
     }
 
-    if (cpf && apenasDigitos(cpf).length !== 11) {
-      setErro("Digite um CPF válido (11 dígitos).");
+    if (cpf && !validarCPF(cpf)) {
+      setErro("Digite um CPF válido. Verifique os números informados.");
       return;
     }
 
     setSalvando(true);
 
     try {
+      const nomeSalvo = nome.trim();
+      const emailSalvo = email.trim();
+      const cpfSalvo = apenasDigitos(cpf);
+
       await saveProfile(user.id, {
-        nome: nome.trim(),
-        email: email.trim(),
-        cpf: apenasDigitos(cpf),
+        nome: nomeSalvo,
+        email: emailSalvo,
+        cpf: cpfSalvo,
       });
+
+      setNome(nomeSalvo);
+      setEmail(emailSalvo);
+      setCpf(cpfSalvo);
+
+      setNomeOriginal(nomeSalvo);
+      setEmailOriginal(emailSalvo);
+      setCpfOriginal(cpfSalvo);
+
       setEditando(false);
-    } catch {
+    } catch (error) {
+      console.error("Erro ao salvar perfil:", error);
       setErro("Não foi possível salvar seus dados agora.");
     } finally {
       setSalvando(false);
     }
+  };
+
+  const handleCancelar = () => {
+    setNome(nomeOriginal);
+    setEmail(emailOriginal);
+    setCpf(cpfOriginal);
+    setErro("");
+    setEditando(false);
   };
 
   const handleSair = async () => {
@@ -252,6 +287,14 @@ export default function Perfil() {
               />
 
               {erro ? <Text style={styles.errorText}>{erro}</Text> : null}
+
+              <Pressable
+                style={styles.cancelButton}
+                onPress={handleCancelar}
+                disabled={salvando}
+              >
+                <Text style={styles.cancelButtonText}>Cancelar</Text>
+              </Pressable>
 
               <Pressable
                 style={[styles.saveButton, salvando && styles.saveButtonDisabled]}
@@ -726,4 +769,21 @@ const styles = StyleSheet.create({
     marginLeft: 8,
   },
 
+  cancelButton: {
+    height: 46,
+    backgroundColor: "#D32F2F",
+    borderWidth: 1,
+    borderColor: "#D32F2F",
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 6,
+  },
+
+  cancelButtonText: {
+    color: COLORS.white,
+    fontSize: 14,
+    fontWeight: "700",
+  },
+  
 });
