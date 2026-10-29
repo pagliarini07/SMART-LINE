@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
-import { router } from "expo-router";
-import { useState } from "react";
+import { router, useLocalSearchParams } from "expo-router";
+import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Pressable,
@@ -14,9 +14,16 @@ import {
 } from "react-native";
 import {
   LIMIAR_CONFIANCA,
+  montarRecomendacaoDaTriagem,
   Recomendacao,
-  recomendarServico,
 } from "../../services/recomendacao";
+import {
+  LIMITE_PEDIDO,
+  mensagemErroTriagem,
+  TriagemResposta,
+  triarPedido,
+  validarRespostaTriagem,
+} from "../../services/triagem";
 
 const COLORS = {
   blue: "#0757D8",
@@ -32,13 +39,57 @@ const COLORS = {
 type Estado =
   | { tipo: "inicial" }
   | { tipo: "sem-resultado" }
+  | { tipo: "esclarecimento"; pergunta: string }
   | { tipo: "recomendacao"; recomendacao: Recomendacao; mostrarAlternativas: boolean };
 
 export default function RecomendacaoInteligente() {
-  const [pedido, setPedido] = useState("");
+  // Vindo do Assistente de IA da tela Locais: o pedido e a resposta da
+  // triagem já chegam prontos, sem precisar perguntar de novo.
+  const params = useLocalSearchParams<{ pedido?: string; triagem?: string }>();
+
+  const [pedido, setPedido] = useState(params.pedido ?? "");
   const [buscando, setBuscando] = useState(false);
   const [erro, setErro] = useState("");
   const [estado, setEstado] = useState<Estado>({ tipo: "inicial" });
+
+  async function mostrarResposta(resposta: TriagemResposta) {
+    if (!resposta.servico_id) {
+      setEstado({
+        tipo: "esclarecimento",
+        pergunta: resposta.pergunta_esclarecimento ?? "",
+      });
+      return;
+    }
+
+    const resultado = await montarRecomendacaoDaTriagem(resposta);
+
+    setEstado(
+      resultado
+        ? { tipo: "recomendacao", recomendacao: resultado, mostrarAlternativas: false }
+        : { tipo: "sem-resultado" }
+    );
+  }
+
+  useEffect(() => {
+    if (!params.triagem) {
+      return;
+    }
+
+    async function carregarRespostaRecebida(triagemJson: string) {
+      setBuscando(true);
+
+      try {
+        await mostrarResposta(validarRespostaTriagem(JSON.parse(triagemJson)));
+      } catch (error) {
+        console.error("Erro ao montar recomendação:", error);
+        setErro(mensagemErroTriagem(error));
+      } finally {
+        setBuscando(false);
+      }
+    }
+
+    carregarRespostaRecebida(params.triagem);
+  }, [params.triagem]);
 
   const handleBuscar = async () => {
     if (!pedido.trim()) {
@@ -50,16 +101,10 @@ export default function RecomendacaoInteligente() {
     setBuscando(true);
 
     try {
-      const resultado = await recomendarServico(pedido);
-
-      setEstado(
-        resultado
-          ? { tipo: "recomendacao", recomendacao: resultado, mostrarAlternativas: false }
-          : { tipo: "sem-resultado" }
-      );
+      await mostrarResposta(await triarPedido(pedido));
     } catch (error) {
       console.error("Erro ao buscar recomendação:", error);
-      setErro("Não foi possível buscar uma recomendação agora.");
+      setErro(mensagemErroTriagem(error));
     } finally {
       setBuscando(false);
     }
@@ -115,6 +160,7 @@ export default function RecomendacaoInteligente() {
           value={pedido}
           onChangeText={setPedido}
           multiline
+          maxLength={LIMITE_PEDIDO}
         />
 
         {erro ? <Text style={styles.errorText}>{erro}</Text> : null}
@@ -130,6 +176,21 @@ export default function RecomendacaoInteligente() {
             <Text style={styles.searchButtonText}>Buscar recomendação</Text>
           )}
         </Pressable>
+
+        {estado.tipo === "esclarecimento" ? (
+          <View style={styles.infoCard}>
+            <Ionicons
+              name="chatbubble-ellipses-outline"
+              size={20}
+              color={COLORS.blue}
+            />
+            <Text style={styles.infoText}>
+              {estado.pergunta ||
+                "Pode descrever com mais detalhes o que você precisa?"}{" "}
+              Complete seu pedido acima e busque de novo.
+            </Text>
+          </View>
+        ) : null}
 
         {estado.tipo === "sem-resultado" ? (
           <View style={styles.infoCard}>

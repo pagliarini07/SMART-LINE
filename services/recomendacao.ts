@@ -1,4 +1,5 @@
 import { supabase } from "./supabase";
+import type { TriagemResposta } from "./triagem";
 
 const STATUS_FINALIZADOS = ["atendido", "cancelado", "nao_compareceu"];
 
@@ -230,6 +231,93 @@ export async function recomendarServico(
       melhor.servico.documentos_sugeridos.length > 0
         ? melhor.servico.documentos_sugeridos
         : documentosPadrao(melhor.servico.setor),
+    alternativas,
+  };
+}
+
+/**
+ * Monta o card de recomendação a partir da resposta da IA (Edge Function
+ * "triagem", issue #69). A IA só devolve ids; título, local e fila vêm do
+ * banco, então o card mostra sempre os dados reais do Supabase.
+ *
+ * Retorna null se o serviço indicado não existir mais (ou estiver
+ * inativo) — a tela trata como "sem resultado".
+ */
+export async function montarRecomendacaoDaTriagem(
+  resposta: TriagemResposta
+): Promise<Recomendacao | null> {
+  if (!resposta.servico_id) {
+    return null;
+  }
+
+  const ids = [resposta.servico_id, ...resposta.alternativas];
+
+  const { data: servicos, error } = await supabase
+    .from("servicos")
+    .select("id, titulo, descricao, setor, documentos_sugeridos, local_id")
+    .in("id", ids)
+    .eq("ativo", true);
+
+  if (error) {
+    throw error;
+  }
+
+  const servicosPorId = new Map(
+    ((servicos ?? []) as ServicoRow[]).map((servico) => [servico.id, servico])
+  );
+
+  const principal = servicosPorId.get(resposta.servico_id);
+
+  if (!principal) {
+    return null;
+  }
+
+  const localIds = [
+    ...new Set([...servicosPorId.values()].map((servico) => servico.local_id)),
+  ];
+
+  const { data: locaisData, error: locaisError } = await supabase
+    .from("locais")
+    .select("id, nome")
+    .in("id", localIds);
+
+  if (locaisError) {
+    throw locaisError;
+  }
+
+  const nomesPorLocal = new Map(
+    (locaisData ?? []).map((local) => [local.id, local.nome as string])
+  );
+
+  const contagem = await contarAguardandoPorServico([principal.id]);
+
+  const alternativas: AlternativaRecomendacao[] = resposta.alternativas
+    .map((id) => servicosPorId.get(id))
+    .filter((servico): servico is ServicoRow => Boolean(servico))
+    .map((servico) => ({
+      servicoId: servico.id,
+      titulo: servico.titulo,
+      nomeLocal: nomesPorLocal.get(servico.local_id) ?? "",
+    }));
+
+  // Documentos: os da IA primeiro; se ela não sugerir nenhum, os
+  // cadastrados no serviço; por último, a lista padrão do setor.
+  const documentosSugeridos =
+    resposta.documentos.length > 0
+      ? resposta.documentos
+      : principal.documentos_sugeridos &&
+          principal.documentos_sugeridos.length > 0
+        ? principal.documentos_sugeridos
+        : documentosPadrao(principal.setor);
+
+  return {
+    servicoId: principal.id,
+    titulo: principal.titulo,
+    nomeLocal: nomesPorLocal.get(principal.local_id) ?? "",
+    pessoasAguardando: contagem.get(principal.id) ?? 0,
+    confianca: resposta.confianca,
+    motivo: resposta.motivo,
+    documentosSugeridos,
     alternativas,
   };
 }
