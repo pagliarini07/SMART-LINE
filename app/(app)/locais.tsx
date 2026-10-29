@@ -196,6 +196,26 @@ export default function Locais() {
             />
           </View>
 
+          <Pressable
+            style={styles.assistenteCard}
+            onPress={() => router.push("/recomendacao")}
+          >
+            <View style={styles.assistenteIcon}>
+              <Ionicons name="sparkles-outline" size={20} color={COLORS.blue} />
+            </View>
+
+            <View style={styles.assistenteTexto}>
+              <Text style={styles.assistenteTitulo}>
+                Não sabe qual serviço escolher?
+              </Text>
+              <Text style={styles.assistenteSubtitulo}>
+                Descreva o que você precisa e a gente recomenda
+              </Text>
+            </View>
+
+            <Ionicons name="chevron-forward" size={18} color={COLORS.blue} />
+          </Pressable>
+
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
@@ -556,6 +576,43 @@ const styles = StyleSheet.create({
     color: COLORS.text,
     fontSize: 14,
     outlineStyle: "none" as never,
+  },
+
+  assistenteCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: COLORS.lightBlue,
+    borderWidth: 1,
+    borderColor: COLORS.blue,
+    borderRadius: 16,
+    padding: 12,
+    marginTop: 12,
+  },
+
+  assistenteIcon: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: COLORS.white,
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 10,
+  },
+
+  assistenteTexto: {
+    flex: 1,
+  },
+
+  assistenteTitulo: {
+    color: COLORS.text,
+    fontSize: 13.5,
+    fontWeight: "700",
+  },
+
+  assistenteSubtitulo: {
+    color: COLORS.secondary,
+    fontSize: 11.5,
+    marginTop: 2,
   },
 
   categoriesScroll: {
