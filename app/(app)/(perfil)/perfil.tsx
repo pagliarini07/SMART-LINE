@@ -513,6 +513,7 @@ const styles = StyleSheet.create({
     fontSize: 19,
     fontWeight: "700",
     marginTop: 12,
+    textTransform: 'capitalize',
   },
 
   email: {
