@@ -22,6 +22,7 @@ export default function AppLayout() {
       <Stack.Screen name="historico" />
       <Stack.Screen name="conquistas" />
       <Stack.Screen name="notificacoes" />
+      <Stack.Screen name="recomendacao" />
     </Stack>
   );
 }
