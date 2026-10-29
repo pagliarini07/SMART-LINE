@@ -1,6 +1,7 @@
+
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Pressable,
   SafeAreaView,
@@ -10,11 +11,16 @@ import {
   Text,
   View,
 } from "react-native";
+import { useAuth } from "../../../hooks/useAuth";
 import {
-  calcularPercentual,
-  formatarPontos,
-  RESUMO_NIVEL,
-} from "../../../utils/niveis";
+  getDadosConquistas,
+  type ConquistaUsuario,
+} from "../../../services/conquistas";
+import {
+  getResumoNivelUsuario,
+  type ResumoNivelUsuario,
+} from "../../../services/niveis";
+import { calcularPercentual, formatarPontos } from "../../../utils/niveis";
 
 const COLORS = {
   blue: "#0757D8",
@@ -30,27 +36,74 @@ const COLORS = {
   yellow: "#FFC400",
 };
 
-type CategoriaConquista = "locais" | "servicos" | "sequencia";
-type FiltroId = "todas" | "locais" | "servicos" | "sequencia" | "concluidas";
+type FiltroId =
+  | "todas"
+  | "locais"
+  | "servicos"
+  | "sequencia"
+  | "concluidas";
 
-type Conquista = {
-  id: string;
-  nome: string;
-  descricao: string;
+type Conquista = ConquistaUsuario & {
   textoProximoMarco: string;
   textoConcluido: string;
-  categoria: CategoriaConquista;
-  recompensa: number;
-  progressoAtual: number;
-  progressoNecessario: number;
   icon: keyof typeof Ionicons.glyphMap;
   iconColor: string;
   iconBackground: string;
 };
 
-const RESUMO = {
-  totalConquistas: 7,
-  percentualConcluido: 42,
+const VISUAL_CONQUISTAS: Record<
+  string,
+  Pick<
+    Conquista,
+    | "textoProximoMarco"
+    | "textoConcluido"
+    | "icon"
+    | "iconColor"
+    | "iconBackground"
+  >
+> = {
+  "frequentador-resolve": {
+    textoProximoMarco: "Próximo marco • 5 visitas",
+    textoConcluido: "Marco alcançado • 5 visitas",
+    icon: "business-outline",
+    iconColor: COLORS.blue,
+    iconBackground: "#EDF4FF",
+  },
+  "explorador-servicos": {
+    textoProximoMarco: "Próximo marco • todos 1x",
+    textoConcluido: "Marco alcançado • todos 1x",
+    icon: "document-text-outline",
+    iconColor: "#4B5B7C",
+    iconBackground: "#F1F5FF",
+  },
+  "veterano-servicos": {
+    textoProximoMarco: "Próximo marco • todos 2x",
+    textoConcluido: "Marco alcançado • todos 2x",
+    icon: "people-outline",
+    iconColor: COLORS.blue,
+    iconBackground: "#EDF4FF",
+  },
+  "conhecendo-palmas": {
+    textoProximoMarco: "Próximo marco • 3 locais",
+    textoConcluido: "Marco alcançado • 3 locais",
+    icon: "location-outline",
+    iconColor: "#C30052",
+    iconBackground: "#F9EAF1",
+  },
+  "semana-produtiva": {
+    textoProximoMarco: "Próximo marco • 5 dias na semana",
+    textoConcluido: "Marco alcançado • 5 dias na semana",
+    icon: "flame-outline",
+    iconColor: "#F48B00",
+    iconBackground: "#FFF3E0",
+  },
+  "mestre-cidade": {
+    textoProximoMarco: "Próximo marco • 10 locais",
+    textoConcluido: "Marco alcançado • 10 locais",
+    icon: "medal-outline",
+    iconColor: "#B18A00",
+    iconBackground: "#FFF8DA",
+  },
 };
 
 const FILTROS: { id: FiltroId; nome: string }[] = [
@@ -61,114 +114,91 @@ const FILTROS: { id: FiltroId; nome: string }[] = [
   { id: "concluidas", nome: "Concluídas" },
 ];
 
-const CONQUISTAS: Conquista[] = [
-  {
-    id: "frequentador-resolve",
-    nome: "Frequentador do Resolve Palmas",
-    descricao: "Vá ao Resolve Palmas — Centro 5 vezes.",
-    textoProximoMarco: "Próximo marco • 5 visitas",
-    textoConcluido: "Marco alcançado • 5 visitas",
-    categoria: "locais",
-    recompensa: 250,
-    progressoAtual: 5,
-    progressoNecessario: 5,
-    icon: "business-outline",
-    iconColor: COLORS.blue,
-    iconBackground: "#EDF4FF",
-  },
-  {
-    id: "explorador-servicos",
-    nome: "Explorador de serviços",
-    descricao: "Utilize todos os tipos de serviço disponíveis pelo menos uma vez.",
-    textoProximoMarco: "Próximo marco • todos 1x",
-    textoConcluido: "Marco alcançado • todos 1x",
-    categoria: "servicos",
-    recompensa: 400,
-    progressoAtual: 6,
-    progressoNecessario: 8,
-    icon: "document-text-outline",
-    iconColor: "#4B5B7C",
-    iconBackground: "#F1F5FF",
-  },
-  {
-    id: "veterano-servicos",
-    nome: "Veterano dos serviços",
-    descricao: "Utilize todos os serviços disponíveis pelo menos 2 vezes.",
-    textoProximoMarco: "Próximo marco • todos 2x",
-    textoConcluido: "Marco alcançado • todos 2x",
-    categoria: "servicos",
-    recompensa: 700,
-    progressoAtual: 4,
-    progressoNecessario: 8,
-    icon: "people-outline",
-    iconColor: COLORS.blue,
-    iconBackground: "#EDF4FF",
-  },
-  {
-    id: "conhecendo-palmas",
-    nome: "Conhecendo Palmas",
-    descricao: "Visite 3 locais públicos diferentes cadastrados no SmartLine.",
-    textoProximoMarco: "Próximo marco • 3 locais",
-    textoConcluido: "Marco alcançado • 3 locais",
-    categoria: "locais",
-    recompensa: 300,
-    progressoAtual: 2,
-    progressoNecessario: 3,
-    icon: "location-outline",
-    iconColor: "#C30052",
-    iconBackground: "#F9EAF1",
-  },
-  {
-    id: "semana-produtiva",
-    nome: "Semana produtiva",
-    descricao: "Use o SmartLine em 5 dias diferentes dentro da mesma semana.",
-    textoProximoMarco: "Próximo marco • 5 dias na semana",
-    textoConcluido: "Marco alcançado • 5 dias na semana",
-    categoria: "sequencia",
-    recompensa: 200,
-    progressoAtual: 4,
-    progressoNecessario: 5,
-    icon: "flame-outline",
-    iconColor: "#F48B00",
-    iconBackground: "#FFF3E0",
-  },
-  {
-    id: "mestre-cidade",
-    nome: "Mestre da cidade",
-    descricao: "Visite 10 locais públicos diferentes.",
-    textoProximoMarco: "Próximo marco • 10 locais",
-    textoConcluido: "Marco alcançado • 10 locais",
-    categoria: "locais",
-    recompensa: 1000,
-    progressoAtual: 2,
-    progressoNecessario: 10,
-    icon: "medal-outline",
-    iconColor: "#B18A00",
-    iconBackground: "#FFF8DA",
-  },
-];
-
 export default function Conquistas() {
+  const { user } = useAuth();
+
   const [filtroAtivo, setFiltroAtivo] = useState<FiltroId>("todas");
+  const [conquistas, setConquistas] = useState<Conquista[]>([]);
+  const [totalConquistas, setTotalConquistas] = useState(0);
+  const [percentualConcluido, setPercentualConcluido] = useState(0);
+  const [totalPontos, setTotalPontos] = useState(0);
+  const [resumoNivel, setResumoNivel] = useState<ResumoNivelUsuario | null>(
+    null,
+  );
+  const [carregando, setCarregando] = useState(true);
+  const [erro, setErro] = useState("");
+
+  const carregarConquistas = useCallback(async () => {
+    if (!user?.id) {
+      setConquistas([]);
+      setTotalConquistas(0);
+      setPercentualConcluido(0);
+      setTotalPontos(0);
+      setResumoNivel(null);
+      setCarregando(false);
+      return;
+    }
+
+    setCarregando(true);
+    setErro("");
+
+    try {
+      const dados = await getDadosConquistas(user.id);
+
+      // O nível é secundário: se falhar, o card de nível é ocultado e a
+      // lista de conquistas continua funcionando.
+      const resumo = await getResumoNivelUsuario(user.id).catch((error) => {
+        console.error("Erro ao carregar nível:", error);
+        return null;
+      });
+
+      const conquistasComVisual: Conquista[] = dados.conquistas.map(
+        (conquista) => ({
+          ...conquista,
+          ...(VISUAL_CONQUISTAS[conquista.id] ?? {
+            textoProximoMarco: "Próximo marco",
+            textoConcluido: "Marco alcançado",
+            icon: "trophy-outline",
+            iconColor: COLORS.blue,
+            iconBackground: "#EDF4FF",
+          }),
+        }),
+      );
+
+      setConquistas(conquistasComVisual);
+      setTotalConquistas(dados.totalConquistas);
+      setPercentualConcluido(dados.percentualConcluido);
+      setTotalPontos(dados.totalPontos);
+      setResumoNivel(resumo);
+    } catch (error) {
+      console.error("Erro ao carregar conquistas:", error);
+      setErro(
+        "Não foi possível carregar suas conquistas. Tente novamente.",
+      );
+    } finally {
+      setCarregando(false);
+    }
+  }, [user?.id]);
+
+  useEffect(() => {
+    carregarConquistas();
+  }, [carregarConquistas]);
 
   const conquistasFiltradas = useMemo(() => {
     if (filtroAtivo === "todas") {
-      return CONQUISTAS;
+      return conquistas;
     }
 
     if (filtroAtivo === "concluidas") {
-      return CONQUISTAS.filter(
-        (conquista) => conquista.progressoAtual >= conquista.progressoNecessario,
-      );
+      return conquistas.filter((conquista) => conquista.concluida);
     }
 
-    return CONQUISTAS.filter((conquista) => conquista.categoria === filtroAtivo);
-  }, [filtroAtivo]);
+    return conquistas.filter(
+      (conquista) => conquista.categoria === filtroAtivo,
+    );
+  }, [filtroAtivo, conquistas]);
 
-  const progressoNivel = calcularPercentual(
-    RESUMO_NIVEL.pontosNivelAtual,
-    RESUMO_NIVEL.pontosProximoNivel,
-  );
+  const progressoNivel = resumoNivel?.progresso ?? 0;
 
   return (
     <SafeAreaView style={styles.screen}>
@@ -190,17 +220,19 @@ export default function Conquistas() {
 
           <View style={styles.statsRow}>
             <View style={styles.statCard}>
-              <Text style={styles.statValue}>{RESUMO.totalConquistas}</Text>
+              <Text style={styles.statValue}>{totalConquistas}</Text>
               <Text style={styles.statLabel}>conquistas</Text>
             </View>
 
             <View style={styles.statCard}>
-              <Text style={styles.statValue}>{formatarPontos(RESUMO_NIVEL.pontosNivelAtual)}</Text>
+              <Text style={styles.statValue}>
+                {formatarPontos(totalPontos)}
+              </Text>
               <Text style={styles.statLabel}>pontos</Text>
             </View>
 
             <View style={styles.statCard}>
-              <Text style={styles.statValue}>{RESUMO.percentualConcluido}%</Text>
+              <Text style={styles.statValue}>{percentualConcluido}%</Text>
               <Text style={styles.statLabel}>concluído</Text>
             </View>
           </View>
@@ -212,37 +244,48 @@ export default function Conquistas() {
         contentContainerStyle={styles.contentContainer}
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.levelCard}>
-          <View style={styles.levelIconWrap}>
-            <Ionicons name="trophy" size={20} color={COLORS.yellow} />
-          </View>
-
-          <View style={styles.levelInfo}>
-            <Text style={styles.levelTitle}>
-              Nível {RESUMO_NIVEL.nivelAtual} • {RESUMO_NIVEL.nomeNivel}
-            </Text>
-            <Text style={styles.levelSubtitle}>
-              Faltam{" "}
-              {formatarPontos(
-                RESUMO_NIVEL.pontosProximoNivel - RESUMO_NIVEL.pontosNivelAtual
-              )}{" "}
-              pontos para o nível {RESUMO_NIVEL.nivelAtual + 1}
-            </Text>
-
-            <View style={styles.levelProgressTrack}>
-              <View style={[styles.levelProgressFill, { width: `${progressoNivel}%` }]} />
+        {resumoNivel ? (
+          <View style={styles.levelCard}>
+            <View style={styles.levelIconWrap}>
+              <Ionicons name="trophy" size={20} color={COLORS.yellow} />
             </View>
 
-            <Text style={styles.levelProgressText}>
-              {formatarPontos(RESUMO_NIVEL.pontosNivelAtual)} /{" "}
-              {formatarPontos(RESUMO_NIVEL.pontosProximoNivel)} pts
-            </Text>
+            <View style={styles.levelInfo}>
+              <Text style={styles.levelTitle}>
+                {resumoNivel.nivelAtual
+                  ? `Nível ${resumoNivel.nivelAtual.nivel} • ${resumoNivel.nivelAtual.nome}`
+                  : "Ainda sem nível"}
+              </Text>
+
+              <Text style={styles.levelSubtitle}>
+                {resumoNivel.proximoNivel
+                  ? `Faltam ${formatarPontos(resumoNivel.pontosFaltantes)} pontos para o nível ${resumoNivel.proximoNivel.nivel}`
+                  : "Você alcançou o nível máximo"}
+              </Text>
+
+              <View style={styles.levelProgressTrack}>
+                <View
+                  style={[
+                    styles.levelProgressFill,
+                    { width: `${progressoNivel}%` },
+                  ]}
+                />
+              </View>
+
+              <Text style={styles.levelProgressText}>
+                {resumoNivel.proximoNivel
+                  ? `${formatarPontos(resumoNivel.totalPontos)} / ${formatarPontos(resumoNivel.proximoNivel.pontos_minimos)} pts`
+                  : `${formatarPontos(resumoNivel.totalPontos)} pts`}
+              </Text>
+            </View>
           </View>
-        </View>
+        ) : null}
 
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Marcos de conquista</Text>
-          <Text style={styles.sectionSubtitle}>Complete etapas para evoluir cada conquista.</Text>
+          <Text style={styles.sectionSubtitle}>
+            Complete etapas para evoluir cada conquista.
+          </Text>
         </View>
 
         <ScrollView
@@ -256,10 +299,18 @@ export default function Conquistas() {
             return (
               <Pressable
                 key={filtro.id}
-                style={[styles.filterPill, ativo && styles.filterPillActive]}
+                style={[
+                  styles.filterPill,
+                  ativo && styles.filterPillActive,
+                ]}
                 onPress={() => setFiltroAtivo(filtro.id)}
               >
-                <Text style={[styles.filterText, ativo && styles.filterTextActive]}>
+                <Text
+                  style={[
+                    styles.filterText,
+                    ativo && styles.filterTextActive,
+                  ]}
+                >
                   {filtro.nome}
                 </Text>
               </Pressable>
@@ -267,10 +318,27 @@ export default function Conquistas() {
           })}
         </ScrollView>
 
+        {carregando ? (
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyDescription}>
+              Carregando suas conquistas...
+            </Text>
+          </View>
+        ) : erro ? (
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyDescription}>{erro}</Text>
+
+            <Pressable onPress={carregarConquistas}>
+              <Text style={styles.filterTextActive}>Tentar novamente</Text>
+            </Pressable>
+          </View>
+        ) : null}
+
         <View style={styles.list}>
-          {conquistasFiltradas.length > 0 ? (
+          {!carregando && !erro && conquistasFiltradas.length > 0 ? (
             conquistasFiltradas.map((conquista) => {
-              const concluida = conquista.progressoAtual >= conquista.progressoNecessario;
+              const concluida = conquista.concluida;
+
               const percentual = calcularPercentual(
                 conquista.progressoAtual,
                 conquista.progressoNecessario,
@@ -293,18 +361,29 @@ export default function Conquistas() {
 
                   <View style={styles.cardContent}>
                     <Text style={styles.cardTitle}>{conquista.nome}</Text>
-                    <Text style={styles.cardDescription}>{conquista.descricao}</Text>
+                    <Text style={styles.cardDescription}>
+                      {conquista.descricao}
+                    </Text>
 
                     <Text style={styles.cardMilestone}>
-                      {concluida ? conquista.textoConcluido : conquista.textoProximoMarco}
+                      {concluida
+                        ? conquista.textoConcluido
+                        : conquista.textoProximoMarco}
                     </Text>
 
                     <View style={styles.progressRow}>
                       <View style={styles.progressTrack}>
-                        <View style={[styles.progressFill, { width: `${percentual}%` }]} />
+                        <View
+                          style={[
+                            styles.progressFill,
+                            { width: `${percentual}%` },
+                          ]}
+                        />
                       </View>
+
                       <Text style={styles.progressCounter}>
-                        {conquista.progressoAtual}/{conquista.progressoNecessario}
+                        {conquista.progressoAtual}/
+                        {conquista.progressoNecessario}
                       </Text>
                     </View>
                   </View>
@@ -312,23 +391,37 @@ export default function Conquistas() {
                   <View style={styles.rewardArea}>
                     {concluida ? (
                       <View style={styles.completedBadge}>
-                        <Ionicons name="checkmark" size={12} color={COLORS.white} />
+                        <Ionicons
+                          name="checkmark"
+                          size={12}
+                          color={COLORS.white}
+                        />
                       </View>
                     ) : null}
 
                     <Text style={styles.rewardLabel}>Recompensa</Text>
-                    <Text style={styles.rewardValue}>+{formatarPontos(conquista.recompensa)} pts</Text>
+                    <Text style={styles.rewardValue}>
+                      +{formatarPontos(conquista.recompensa)} pts
+                    </Text>
                   </View>
                 </View>
               );
             })
-          ) : (
+          ) : !carregando && !erro ? (
             <View style={styles.emptyState}>
-              <Ionicons name="trophy-outline" size={34} color={COLORS.blue} />
-              <Text style={styles.emptyTitle}>Nenhuma conquista nesse filtro</Text>
-              <Text style={styles.emptyDescription}>Selecione outro filtro para ver mais marcos.</Text>
+              <Ionicons
+                name="trophy-outline"
+                size={34}
+                color={COLORS.blue}
+              />
+              <Text style={styles.emptyTitle}>
+                Nenhuma conquista nesse filtro
+              </Text>
+              <Text style={styles.emptyDescription}>
+                Selecione outro filtro para ver mais marcos.
+              </Text>
             </View>
-          )}
+          ) : null}
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -669,5 +762,4 @@ const styles = StyleSheet.create({
     fontSize: 12,
     marginTop: 3,
   },
-
 });

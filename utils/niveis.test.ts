@@ -1,4 +1,4 @@
-import { calcularPercentual, formatarPontos, RESUMO_NIVEL } from "./niveis";
+import { calcularPercentual, formatarPontos } from "./niveis";
 
 describe("calcularPercentual", () => {
   it("calcula a porcentagem entre dois valores", () => {
@@ -19,13 +19,5 @@ describe("formatarPontos", () => {
   it("formata números no padrão brasileiro, sem casas decimais", () => {
     expect(formatarPontos(1450)).toBe("1.450");
     expect(formatarPontos(0)).toBe("0");
-  });
-});
-
-describe("RESUMO_NIVEL", () => {
-  it("tem os pontos do nível atual menores que os do próximo nível", () => {
-    expect(RESUMO_NIVEL.pontosNivelAtual).toBeLessThan(
-      RESUMO_NIVEL.pontosProximoNivel
-    );
   });
 });

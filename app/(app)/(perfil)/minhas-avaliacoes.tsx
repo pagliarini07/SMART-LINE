@@ -16,6 +16,10 @@ import {
   buscarMinhasAvaliacoes,
   type Avaliacao,
 } from "../../../services/avaliacoes";
+import {
+  buscarLocaisPorIds,
+  type LocalResumo,
+} from "../../../services/locais";
 
 const COLORS = {
   blue: "#0757D8",
@@ -29,25 +33,11 @@ const COLORS = {
   red: "#D93025",
 };
 
-const LOCAIS = {
-  "22222222-2222-2222-2222-222222222001": {
-    nome: "Resolve Palmas — Centro",
-    endereco: "Av. JK, 104 Norte, Palmas – TO",
-  },
-
-  "22222222-2222-2222-2222-222222222002": {
-    nome: "Cartório 2º Ofício",
-    endereco: "Quadra 104 Norte, Av. LO 2, Nº 30",
-  },
-
-  "22222222-2222-2222-2222-222222222003": {
-    nome: "Detran Palmas",
-    endereco: "104 Sul, Av. LO 1, Conj. 01, Lt. 05",
-  },
-} as const;
-
 export default function MinhasAvaliacoes() {
   const [avaliacoes, setAvaliacoes] = useState<Avaliacao[]>([]);
+  const [locaisPorId, setLocaisPorId] = useState<
+    Record<string, LocalResumo>
+  >({});
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState("");
 
@@ -61,7 +51,13 @@ export default function MinhasAvaliacoes() {
       setCarregando(true);
 
       const dados = await buscarMinhasAvaliacoes();
+      const locais = await buscarLocaisPorIds(
+        dados.map((avaliacao) => avaliacao.local_id)
+      );
 
+      setLocaisPorId(
+        Object.fromEntries(locais.map((local) => [local.id, local]))
+      );
       setAvaliacoes(dados);
     } catch (error) {
       console.error("Erro ao carregar avaliações:", error);
@@ -95,8 +91,7 @@ export default function MinhasAvaliacoes() {
   }: {
     item: Avaliacao;
   }) {
-    const local =
-      LOCAIS[item.local_id as keyof typeof LOCAIS];
+    const local = locaisPorId[item.local_id];
 
     return (
       <Pressable
