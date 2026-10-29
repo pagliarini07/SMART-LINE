@@ -20,6 +20,10 @@ import {
   criarAvaliacao,
   editarAvaliacao,
 } from "../../../services/avaliacoes";
+import {
+  buscarLocaisPorIds,
+  type LocalResumo,
+} from "../../../services/locais";
 
 const COLORS = {
   blue: "#0757D8",
@@ -33,29 +37,13 @@ const COLORS = {
   red: "#D93025",
 };
 
-const LOCAIS = {
-  "22222222-2222-2222-2222-222222222001": {
-    nome: "Resolve Palmas — Centro",
-    endereco: "Av. JK, 104 Norte, Palmas – TO",
-  },
-
-  "22222222-2222-2222-2222-222222222002": {
-    nome: "Cartório 2º Ofício",
-    endereco: "Quadra 104 Norte, Av. LO 2, Nº 30",
-  },
-
-  "22222222-2222-2222-2222-222222222003": {
-    nome: "Detran Palmas",
-    endereco: "104 Sul, Av. LO 1, Conj. 01, Lt. 05",
-  },
-} as const;
-
 export default function AvaliarLocal() {
   const { localid } = useLocalSearchParams<{
     localid: string;
   }>();
 
   const [nota, setNota] = useState(0);
+  const [local, setLocal] = useState<LocalResumo | null>(null);
   const [avaliacaoId, setAvaliacaoId] = useState<string | null>(null);
   const [carregando, setCarregando] = useState(true);
   const [salvando, setSalvando] = useState(false);
@@ -64,10 +52,6 @@ export default function AvaliarLocal() {
   const localId = Array.isArray(localid)
     ? localid[0]
     : localid;
-
-  const local = localId
-    ? LOCAIS[localId as keyof typeof LOCAIS]
-    : undefined;
 
   useEffect(() => {
     async function carregarAvaliacao() {
@@ -78,7 +62,12 @@ export default function AvaliarLocal() {
       }
 
       try {
-        const avaliacao = await buscarMinhaAvaliacao(localId);
+        const [locais, avaliacao] = await Promise.all([
+          buscarLocaisPorIds([localId]),
+          buscarMinhaAvaliacao(localId),
+        ]);
+
+        setLocal(locais[0] ?? null);
 
         if (avaliacao) {
           setNota(avaliacao.nota);

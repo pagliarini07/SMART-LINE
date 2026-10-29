@@ -155,3 +155,34 @@ export async function listarLocais(): Promise<Local[]> {
     };
   });
 }
+
+export type LocalResumo = {
+  id: string;
+  nome: string;
+  endereco: string;
+};
+
+/**
+ * Busca nome e endereço de locais pelo id (inclusive locais inativos, para
+ * que avaliações antigas continuem mostrando o nome correto).
+ */
+export async function buscarLocaisPorIds(
+  ids: string[]
+): Promise<LocalResumo[]> {
+  const idsUnicos = [...new Set(ids)];
+
+  if (idsUnicos.length === 0) {
+    return [];
+  }
+
+  const { data, error } = await supabase
+    .from("locais")
+    .select("id, nome, endereco")
+    .in("id", idsUnicos);
+
+  if (error) {
+    throw error;
+  }
+
+  return (data ?? []) as LocalResumo[];
+}

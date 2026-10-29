@@ -1,3 +1,4 @@
+
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { createClient } from "@supabase/supabase-js";
 import { Platform } from "react-native";
@@ -7,21 +8,15 @@ const supabasePublishableKey =
   process.env.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
 
 if (!supabaseUrl || !supabasePublishableKey) {
-  console.warn(
-    "[supabase] EXPO_PUBLIC_SUPABASE_URL / EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY " +
-      "não configuradas. Crie um arquivo .env na raiz do projeto (veja " +
-      ".env.example) com as credenciais do Supabase. Sem isso o app abre, " +
-      "mas login, cadastro e perfil não vão funcionar."
+  throw new Error(
+    "Configure EXPO_PUBLIC_SUPABASE_URL e " +
+      "EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY no arquivo .env."
   );
 }
 
-// Usa um valor de fallback só pra não derrubar o app inteiro (createClient
-// lança erro de sincrono se a URL vier vazia) quando o .env não existe —
-// as chamadas de auth/banco vão falhar normalmente e cair nos catch já
-// existentes em login.tsx/cadastro.tsx/perfil.tsx.
 export const supabase = createClient(
-  supabaseUrl || "https://placeholder.supabase.co",
-  supabasePublishableKey || "placeholder-key",
+  supabaseUrl,
+  supabasePublishableKey,
   {
     auth: {
       ...(Platform.OS !== "web"

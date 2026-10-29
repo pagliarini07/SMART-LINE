@@ -252,26 +252,6 @@ export default function Inicio() {
                 </Text>
               )}
             </View>
-
-            {/* LEMBRETE */}
-            <View style={styles.reminderCard}>
-              <Ionicons
-                name="time-outline"
-                size={20}
-                color={COLORS.blue}
-              />
-
-              <View style={styles.reminderText}>
-                <Text style={styles.reminderTitle}>Vai sair?</Text>
-                <Text style={styles.reminderDescription}>
-                  Ajude a manter as filas atualizadas.
-                </Text>
-              </View>
-
-              <Pressable style={styles.reminderButton}>
-                <Text style={styles.reminderButtonText}>Informar saída</Text>
-              </Pressable>
-            </View>
           </>
         ) : null}
       </ScrollView>
@@ -541,48 +521,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: "700",
     marginRight: 2,
-  },
-
-  reminderCard: {
-    marginTop: 4,
-    marginHorizontal: 16,
-    backgroundColor: COLORS.lightBlue,
-    borderWidth: 1,
-    borderColor: COLORS.borderBlue,
-    borderRadius: 14,
-    padding: 14,
-    flexDirection: "row",
-    alignItems: "center",
-  },
-
-  reminderText: {
-    flex: 1,
-    marginLeft: 10,
-  },
-
-  reminderTitle: {
-    color: COLORS.text,
-    fontSize: 13.5,
-    fontWeight: "700",
-  },
-
-  reminderDescription: {
-    color: COLORS.secondary,
-    fontSize: 10.5,
-    marginTop: 1,
-  },
-
-  reminderButton: {
-    backgroundColor: COLORS.white,
-    borderRadius: 20,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-  },
-
-  reminderButtonText: {
-    color: COLORS.blue,
-    fontSize: 11.5,
-    fontWeight: "700",
   },
 
 });

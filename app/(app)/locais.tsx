@@ -507,6 +507,7 @@ const styles = StyleSheet.create({
     color: COLORS.white,
     fontSize: 28,
     fontWeight: "700",
+    textTransform: 'capitalize',
   },
 
   help: {

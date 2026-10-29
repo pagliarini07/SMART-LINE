@@ -14,16 +14,16 @@ import {
 } from "react-native";
 import BottomTabBar from "../../../components/BottomTabBar";
 import { useAuth } from "../../../hooks/useAuth";
+import {
+  getResumoNivelUsuario,
+  type ResumoNivelUsuario,
+} from "../../../services/niveis";
 import { getProfile, saveProfile } from "../../../services/profiles";
 import {
   getSequenciaAtendimentos,
   type DadosSequencia,
 } from "../../../services/sequencia";
-import {
-  calcularPercentual,
-  formatarPontos,
-  RESUMO_NIVEL,
-} from "../../../utils/niveis";
+import { formatarPontos } from "../../../utils/niveis";
 
 const COLORS = {
   blue: "#0757D8",
@@ -53,11 +53,6 @@ function formatarCpf(cpf: string) {
   );
 }
 
-const progressoNivel = calcularPercentual(
-  RESUMO_NIVEL.pontosNivelAtual,
-  RESUMO_NIVEL.pontosProximoNivel
-);
-
 export default function Perfil() {
   const { user, signOut } = useAuth();
 
@@ -84,6 +79,11 @@ export default function Perfil() {
   const [carregandoSequencia, setCarregandoSequencia] =
     useState(true);
 
+  const [resumoNivel, setResumoNivel] =
+    useState<ResumoNivelUsuario | null>(null);
+  const [carregandoNivel, setCarregandoNivel] = useState(true);
+  const [erroNivel, setErroNivel] = useState("");
+
   useEffect(() => {
     async function carregarPerfil() {
       if (!user) {
@@ -105,7 +105,7 @@ export default function Perfil() {
         setNomeOriginal(nomeCarregado);
         setEmailOriginal(emailCarregado);
         setCpfOriginal(cpfCarregado);
-      } catch (error) {
+      } catch {
         setErro("Não foi possível carregar seus dados agora.");
         setEmail(user.email ?? "");
       } finally {
@@ -140,6 +140,31 @@ export default function Perfil() {
 
     carregarSequencia();
   }, [user]);
+
+  useEffect(() => {
+    async function carregarNivel() {
+      if (!user?.id) {
+        setResumoNivel(null);
+        setCarregandoNivel(false);
+        return;
+      }
+
+      setCarregandoNivel(true);
+      setErroNivel("");
+
+      try {
+        const resumo = await getResumoNivelUsuario(user.id);
+        setResumoNivel(resumo);
+      } catch (error) {
+        console.error("Erro ao carregar pontuação e nível:", error);
+        setErroNivel("Não foi possível carregar seus pontos e nível.");
+      } finally {
+        setCarregandoNivel(false);
+      }
+    }
+
+    carregarNivel();
+  }, [user?.id]);
 
   const handleSalvar = async () => {
     if (!user) {
@@ -362,43 +387,66 @@ export default function Perfil() {
           />
         </Pressable>
 
-        {/* NÍVEL / PROGRESSO */}
+        {/* PONTUAÇÃO / NÍVEL */}
         <View style={styles.levelCard}>
           <View style={styles.levelIconWrap}>
             <Ionicons name="trophy" size={20} color={COLORS.yellow} />
           </View>
 
           <View style={styles.levelInfo}>
-            <Text style={styles.levelTitle}>
-              Nível {RESUMO_NIVEL.nivelAtual} • {RESUMO_NIVEL.nomeNivel}
-            </Text>
-            <Text style={styles.levelSubtitle}>
-              Faltam{" "}
-              {formatarPontos(
-                RESUMO_NIVEL.pontosProximoNivel - RESUMO_NIVEL.pontosNivelAtual
-              )}{" "}
-              pontos para o nível {RESUMO_NIVEL.nivelAtual + 1}
-            </Text>
-
-            <View style={styles.levelProgressTrack}>
-              <View
-                style={[
-                  styles.levelProgressFill,
-                  { width: `${progressoNivel}%` },
-                ]}
-              />
-            </View>
-
-            <View style={styles.levelFooterRow}>
-              <Text style={styles.levelProgressText}>
-                {formatarPontos(RESUMO_NIVEL.pontosNivelAtual)} /{" "}
-                {formatarPontos(RESUMO_NIVEL.pontosProximoNivel)} pts
+            {carregandoNivel ? (
+              <ActivityIndicator color={COLORS.blue} size="small" />
+            ) : erroNivel ? (
+              <Text style={styles.levelSubtitle}>{erroNivel}</Text>
+            ) : !resumoNivel ? (
+              <Text style={styles.levelSubtitle}>
+                Entre na sua conta para consultar sua pontuação.
               </Text>
+            ) : !resumoNivel.niveisConfigurados ? (
+              <>
+                <Text style={styles.levelTitle}>Nível indisponível</Text>
+                <Text style={styles.levelSubtitle}>
+                  Não foi possível consultar a progressão de níveis no momento.
+                </Text>
+              </>
+            ) : (
+              <>
+                <Text style={styles.levelTitle}>
+                  {resumoNivel.nivelAtual
+                    ? `Nível ${resumoNivel.nivelAtual.nivel} • ${resumoNivel.nivelAtual.nome}`
+                    : "Ainda não alcançou o primeiro nível"}
+                </Text>
+                <Text style={styles.levelSubtitle}>
+                  {resumoNivel.proximoNivel
+                    ? `Faltam ${formatarPontos(resumoNivel.pontosFaltantes)} pontos para o nível ${resumoNivel.proximoNivel.nivel}`
+                    : "Você alcançou o último nível cadastrado."}
+                </Text>
 
-              <Pressable onPress={() => router.push("/conquistas")}>
-                <Text style={styles.levelLink}>Ver conquistas</Text>
-              </Pressable>
-            </View>
+                <View style={styles.levelProgressTrack}>
+                  <View
+                    style={[
+                      styles.levelProgressFill,
+                      { width: `${resumoNivel.progresso}%` },
+                    ]}
+                  />
+                </View>
+
+                <View style={styles.levelFooterRow}>
+                  <Text style={styles.levelProgressText}>
+                    {formatarPontos(resumoNivel.totalPontos)} pts
+                  </Text>
+                </View>
+              </>
+            )}
+
+            <Pressable
+              onPress={() => router.push("/conquistas")}
+              style={{ alignSelf: "flex-start", marginTop: 8 }}
+              accessibilityRole="button"
+              accessibilityLabel="Ver conquistas"
+            >
+              <Text style={styles.levelLink}>Ver conquistas</Text>
+            </Pressable>
           </View>
         </View>
 

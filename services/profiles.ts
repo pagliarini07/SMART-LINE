@@ -1,3 +1,4 @@
+
 import { supabase } from "./supabase";
 
 export type Profile = {
@@ -17,8 +18,8 @@ export type ProfileChanges = {
 
 export async function getProfile(userId: string): Promise<Profile | null> {
   const { data, error } = await supabase
-    .from("profiles")
-    .select("*")
+    .from("usuarios")
+    .select("id, nome, cpf, email, created_at, updated_at")
     .eq("id", userId)
     .maybeSingle();
 
@@ -29,16 +30,19 @@ export async function getProfile(userId: string): Promise<Profile | null> {
   return data;
 }
 
-// upsert em vez de update: contas criadas antes da tabela/trigger existirem
-// ainda não têm uma linha em profiles, então a primeira gravação a cria.
 export async function saveProfile(
   userId: string,
   changes: ProfileChanges
 ): Promise<Profile> {
   const { data, error } = await supabase
-    .from("profiles")
-    .upsert({ id: userId, ...changes }, { onConflict: "id" })
-    .select()
+    .from("usuarios")
+    .update({
+      nome: changes.nome,
+      cpf: changes.cpf || null,
+      email: changes.email,
+    })
+    .eq("id", userId)
+    .select("id, nome, cpf, email, created_at, updated_at")
     .single();
 
   if (error) {
