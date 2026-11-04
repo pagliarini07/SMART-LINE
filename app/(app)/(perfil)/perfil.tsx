@@ -6,6 +6,7 @@ import {
   ActivityIndicator,
   Pressable,
   SafeAreaView,
+  ScrollView,
   StatusBar,
   StyleSheet,
   Text,
@@ -13,6 +14,7 @@ import {
   View,
 } from "react-native";
 import BottomTabBar from "../../../components/BottomTabBar";
+import ConfirmacaoInline from "../../../components/ConfirmacaoInline";
 import { useAuth } from "../../../hooks/useAuth";
 import {
   getResumoNivelUsuario,
@@ -61,6 +63,8 @@ export default function Perfil() {
   const [salvando, setSalvando] = useState(false);
   const [erro, setErro] = useState("");
   const [sucesso, setSucesso] = useState("");
+  const [confirmandoSaida, setConfirmandoSaida] = useState(false);
+  const [saindo, setSaindo] = useState(false);
 
   const [nome, setNome] = useState("");
   const [email, setEmail] = useState("");
@@ -230,11 +234,15 @@ export default function Perfil() {
   };
 
   const handleSair = async () => {
+    setSaindo(true);
+
     try {
       await signOut();
       router.replace("/login");
     } catch (error) {
       console.error("Erro ao encerrar sessão:", error);
+    } finally {
+      setSaindo(false);
     }
   };
 
@@ -249,7 +257,11 @@ export default function Perfil() {
         <Text style={styles.headerTitle}>Perfil</Text>
       </View>
 
-      <View style={styles.content}>
+      <ScrollView
+        style={styles.content}
+        contentContainerStyle={styles.contentScroll}
+        showsVerticalScrollIndicator={false}
+      >
         {/* CARD DO USUÁRIO */}
         <View style={styles.avatarCard}>
           <View style={styles.avatar}>
@@ -489,11 +501,29 @@ export default function Perfil() {
         </Pressable>
 
         {/* SAIR */}
-        <Pressable style={styles.logoutButton} onPress={handleSair}>
-          <Ionicons name="log-out-outline" size={18} color="#D32F2F" />
-          <Text style={styles.logoutButtonText}>Sair</Text>
-        </Pressable>
-      </View>
+        {confirmandoSaida ? (
+          <View style={styles.logoutConfirm}>
+            <ConfirmacaoInline
+              mensagem="Deseja mesmo sair da sua conta? Você vai precisar entrar de novo com e-mail e senha."
+              textoCancelar="Cancelar"
+              textoConfirmar="Sim, sair"
+              onCancelar={() => setConfirmandoSaida(false)}
+              onConfirmar={handleSair}
+              carregando={saindo}
+            />
+          </View>
+        ) : (
+          <Pressable
+            style={styles.logoutButton}
+            onPress={() => {
+              setConfirmandoSaida(true);
+            }}
+          >
+            <Ionicons name="log-out-outline" size={18} color="#D32F2F" />
+            <Text style={styles.logoutButtonText}>Sair</Text>
+          </Pressable>
+        )}
+      </ScrollView>
 
       {/* BARRA INFERIOR */}
       <BottomTabBar />
@@ -538,6 +568,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
 
+  // Espaço pra BottomTabBar (position: absolute) não cobrir o fim.
+  contentScroll: {
+    paddingBottom: 100,
+  },
+
   successText: {
     color: "#1B7F45",
     backgroundColor: "#EAF8EF",
@@ -546,6 +581,10 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     fontSize: 12.5,
     marginTop: 10,
+  },
+
+  logoutConfirm: {
+    marginTop: 20,
   },
 
   avatarCard: {

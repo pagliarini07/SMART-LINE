@@ -10,6 +10,7 @@ import {
   Text,
   View,
 } from "react-native";
+import ConfirmacaoInline from "../../components/ConfirmacaoInline";
 import { useAuth } from "../../hooks/useAuth";
 import {
   cancelarSenha,
@@ -38,6 +39,7 @@ export default function Fila() {
   const [erro, setErro] = useState("");
   const [saindo, setSaindo] = useState(false);
   const [erroSair, setErroSair] = useState("");
+  const [confirmandoSaida, setConfirmandoSaida] = useState(false);
 
   useEffect(() => {
     let montado = true;
@@ -194,17 +196,28 @@ export default function Fila() {
               <Text style={styles.leaveError}>{erroSair}</Text>
             ) : null}
 
-            <Pressable
-              style={[styles.leaveButton, saindo && styles.leaveButtonDisabled]}
-              onPress={sairDaFila}
-              disabled={saindo}
-            >
-              {saindo ? (
-                <ActivityIndicator color="#D32F2F" />
-              ) : (
+            {confirmandoSaida ? (
+              <View style={styles.confirmacao}>
+                <ConfirmacaoInline
+                  mensagem="Tem certeza? Você vai perder seu lugar na fila e precisará retirar uma nova senha."
+                  textoCancelar="Continuar na fila"
+                  textoConfirmar="Sim, sair"
+                  onCancelar={() => setConfirmandoSaida(false)}
+                  onConfirmar={sairDaFila}
+                  carregando={saindo}
+                />
+              </View>
+            ) : (
+              <Pressable
+                style={styles.leaveButton}
+                onPress={() => {
+                  setErroSair("");
+                  setConfirmandoSaida(true);
+                }}
+              >
                 <Text style={styles.leaveButtonText}>Sair da fila</Text>
-              )}
-            </Pressable>
+              </Pressable>
+            )}
           </>
         ) : null}
       </View>
@@ -363,8 +376,9 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
 
-  leaveButtonDisabled: {
-    opacity: 0.7,
+  confirmacao: {
+    width: "100%",
+    marginTop: 20,
   },
 
   leaveError: {

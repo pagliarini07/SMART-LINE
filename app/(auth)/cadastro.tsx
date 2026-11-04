@@ -28,12 +28,15 @@ export default function Cadastro() {
 
     setError("");
 
+    // Espaços e maiúsculas no e-mail viram outra conta no Supabase.
+    const emailNormalizado = email.trim().toLowerCase();
+
     if (!nome || !email || !password || !confirmPassword) {
         setError("Preencha todos os campos.");
         return;
     }
 
-    if (!email.includes("@")) {
+    if (!emailNormalizado.includes("@")) {
         setError("Digite um e-mail válido.");
         return;
     }
@@ -52,7 +55,7 @@ export default function Cadastro() {
 
     try {
       const { error } = await supabase.auth.signUp({
-        email,
+        email: emailNormalizado,
         password,
         options: {
           data: {
@@ -121,12 +124,22 @@ export default function Cadastro() {
         </Text>
 
         <TextInput
-          style={styles.input}
+          style={[styles.input, styles.inputComDica]}
           placeholder="Digite sua senha"
           secureTextEntry
           value={password}
           onChangeText={setPassword}
         />
+
+        <Text
+          style={[
+            styles.dica,
+            password.length > 0 && password.length < 8 && styles.dicaAlerta,
+            password.length >= 8 && styles.dicaOk,
+          ]}
+        >
+          {password.length >= 8 ? "✓ " : ""}Mínimo de 8 caracteres
+        </Text>
 
         <Text style={styles.label}>
           Confirmar senha
@@ -243,6 +256,24 @@ const styles = StyleSheet.create({
 
   loadingText: {
     marginLeft: 8,
+  },
+
+  inputComDica: {
+    marginBottom: 6,
+  },
+
+  dica: {
+    color: "#65708A",
+    fontSize: 13,
+    marginBottom: 18,
+  },
+
+  dicaAlerta: {
+    color: "#B26A00",
+  },
+
+  dicaOk: {
+    color: "#1B7F45",
   },
 
   registerButtonText: {
