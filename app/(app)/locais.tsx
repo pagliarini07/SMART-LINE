@@ -197,6 +197,17 @@ export default function Locais() {
               value ={busca}
               onChangeText={setBusca}
             />
+
+            {busca ? (
+              <Pressable
+                onPress={() => setBusca("")}
+                style={styles.clearButton}
+                accessibilityRole="button"
+                accessibilityLabel="Limpar busca"
+              >
+                <Ionicons name="close-circle" size={20} color={COLORS.secondary} />
+              </Pressable>
+            ) : null}
           </View>
 
           <ScrollView
@@ -862,5 +873,10 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginTop: 6,
     lineHeight: 17,
-  },  
+  },
+
+  clearButton: {
+    padding: 6,
+    marginLeft: 4,
+  },
 });
