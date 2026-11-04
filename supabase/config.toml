@@ -1,0 +1,2 @@
+[functions.triagem]
+verify_jwt = true
