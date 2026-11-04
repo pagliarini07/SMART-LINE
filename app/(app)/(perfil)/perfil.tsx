@@ -60,6 +60,7 @@ export default function Perfil() {
   const [editando, setEditando] = useState(false);
   const [salvando, setSalvando] = useState(false);
   const [erro, setErro] = useState("");
+  const [sucesso, setSucesso] = useState("");
 
   const [nome, setNome] = useState("");
   const [email, setEmail] = useState("");
@@ -172,6 +173,7 @@ export default function Perfil() {
     }
 
     setErro("");
+    setSucesso("");
 
     if (!nome.trim()) {
       setErro("Digite seu nome.");
@@ -210,6 +212,7 @@ export default function Perfil() {
       setCpfOriginal(cpfSalvo);
 
       setEditando(false);
+      setSucesso("Dados salvos com sucesso.");
     } catch (error) {
       console.error("Erro ao salvar perfil:", error);
       setErro("Não foi possível salvar seus dados agora.");
@@ -266,10 +269,15 @@ export default function Perfil() {
                 <Text style={styles.email}>CPF: {formatarCpf(cpf)}</Text>
               ) : null}
 
+              {sucesso ? (
+                <Text style={styles.successText}>{sucesso}</Text>
+              ) : null}
+
               <Pressable
                 style={styles.editButton}
                 onPress={() => {
                   setErro("");
+                  setSucesso("");
                   setEditando(true);
                 }}
               >
@@ -528,6 +536,16 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     paddingHorizontal: 16,
+  },
+
+  successText: {
+    color: "#1B7F45",
+    backgroundColor: "#EAF8EF",
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    fontSize: 12.5,
+    marginTop: 10,
   },
 
   avatarCard: {

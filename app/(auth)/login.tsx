@@ -1,7 +1,8 @@
 import { Ionicons } from "@expo/vector-icons";
-import { router } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
 import {
+  ActivityIndicator,
   Pressable,
   SafeAreaView,
   StyleSheet,
@@ -16,9 +17,16 @@ export default function Login() {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [error, setError] = useState("");
+    const [entrando, setEntrando] = useState(false);
     const { signIn } = useAuth();
+    // Vindo do Cadastro: mostra que a conta foi criada.
+    const { cadastro } = useLocalSearchParams<{ cadastro?: string }>();
 
     const handleLogin = async () => {
+        if (entrando) {
+            return;
+        }
+
         setError("");
 
         if (!email || !password) {
@@ -31,11 +39,15 @@ export default function Login() {
             return;
         }
 
+        setEntrando(true);
+
         try {
             await signIn(email.trim().toLowerCase(), password);
             router.replace("/locais");
         } catch (error) {
             setError(mensagemErroAuth(error));
+        } finally {
+            setEntrando(false);
         }
     };
 
@@ -54,6 +66,13 @@ export default function Login() {
           Acesse sua conta
         </Text>
 
+        {cadastro === "ok" ? (
+          <Text style={styles.successText}>
+            Conta criada com sucesso! Entre com seu e-mail e senha. Se
+            recebeu um e-mail de confirmação, confirme antes de entrar.
+          </Text>
+        ) : null}
+
         <Text style={styles.label}>
           E-mail
         </Text>
@@ -65,6 +84,7 @@ export default function Login() {
           autoCapitalize="none"
           value={email}
           onChangeText={setEmail}
+          editable={!entrando}
         />
 
         <Text style={styles.label}>
@@ -94,10 +114,24 @@ export default function Login() {
             </Text>
             ) : null}
 
-        <Pressable style={styles.loginButton} onPress={handleLogin}>
-          <Text style={styles.loginButtonText}>
-            Entrar
-          </Text>
+        <Pressable
+          style={[styles.loginButton, entrando && styles.loginButtonDisabled]}
+          onPress={handleLogin}
+          disabled={entrando}
+          accessibilityRole="button"
+        >
+          {entrando ? (
+            <View style={styles.loadingRow}>
+              <ActivityIndicator color="#FFFFFF" />
+              <Text style={[styles.loginButtonText, styles.loadingText]}>
+                Entrando...
+              </Text>
+            </View>
+          ) : (
+            <Text style={styles.loginButtonText}>
+              Entrar
+            </Text>
+          )}
         </Pressable>
 
         <Pressable>
@@ -175,6 +209,29 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginTop: 10,
     marginBottom: 20,
+  },
+
+  loginButtonDisabled: {
+    opacity: 0.8,
+  },
+
+  loadingRow: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+
+  loadingText: {
+    marginLeft: 8,
+  },
+
+  successText: {
+    color: "#1B7F45",
+    backgroundColor: "#EAF8EF",
+    borderRadius: 12,
+    padding: 12,
+    fontSize: 14,
+    lineHeight: 19,
+    marginBottom: 18,
   },
 
   loginButtonText: {

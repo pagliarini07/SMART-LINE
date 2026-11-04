@@ -8,6 +8,7 @@ import {
   Text,
   View,
 } from "react-native";
+import TelaCarregando from "../components/TelaCarregando";
 import { useAuth } from "../hooks/useAuth";
 
 const COLORS = {
@@ -25,7 +26,7 @@ export default function Index() {
   const { isAuthenticated, isLoading } = useAuth();
 
   if (isLoading) {
-    return null;
+    return <TelaCarregando />;
   }
 
   if (isAuthenticated) {

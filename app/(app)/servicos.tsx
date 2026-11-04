@@ -27,6 +27,7 @@ const COLORS = {
   lightBlue: "#EDF4FF",
   borderBlue: "#CFE0FF",
   green: "#1FAE59",
+  red: "#D32F2F",
   yellowSoft: "#FFF3D6",
 };
 
@@ -151,8 +152,18 @@ export default function Inicio() {
                 </View>
 
                 <View style={styles.statusPill}>
-                  <View style={styles.statusDot} />
-                  <Text style={styles.statusText}>
+                  <View
+                    style={[
+                      styles.statusDot,
+                      !unidade.aberto && styles.statusDotFechado,
+                    ]}
+                  />
+                  <Text
+                    style={[
+                      styles.statusText,
+                      !unidade.aberto && styles.statusTextFechado,
+                    ]}
+                  >
                     {unidade.aberto ? "Aberto" : "Fechado"}
                   </Text>
                 </View>
@@ -403,6 +414,14 @@ const styles = StyleSheet.create({
     color: COLORS.green,
     fontSize: 12,
     fontWeight: "600",
+  },
+
+  statusDotFechado: {
+    backgroundColor: COLORS.red,
+  },
+
+  statusTextFechado: {
+    color: COLORS.red,
   },
 
   unitWaiting: {

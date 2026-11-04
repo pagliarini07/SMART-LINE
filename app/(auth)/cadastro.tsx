@@ -2,6 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { useState } from "react";
 import {
+  ActivityIndicator,
   Pressable,
   SafeAreaView,
   StyleSheet,
@@ -18,8 +19,13 @@ export default function Cadastro() {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
+  const [criando, setCriando] = useState(false);
 
   const handleCadastro = async () => {
+    if (criando) {
+      return;
+    }
+
     setError("");
 
     if (!nome || !email || !password || !confirmPassword) {
@@ -42,22 +48,31 @@ export default function Cadastro() {
         return;
     }
 
-  const { error } = await supabase.auth.signUp({
-    email,
-    password,
-    options: {
-      data: {
-        nome,
-      },
-    },
-  });
+    setCriando(true);
 
-  if (error) {
-    setError(mensagemErroAuth(error));
-    return;
-  }
+    try {
+      const { error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            nome: nome.trim(),
+          },
+        },
+      });
 
-  router.replace("/login");
+      if (error) {
+        setError(mensagemErroAuth(error));
+        return;
+      }
+
+      // O Login mostra o aviso de "conta criada".
+      router.replace({ pathname: "/login", params: { cadastro: "ok" } } as never);
+    } catch (error) {
+      setError(mensagemErroAuth(error));
+    } finally {
+      setCriando(false);
+    }
   };
 
   return (
@@ -131,10 +146,24 @@ export default function Cadastro() {
             </Text>
             ) : null}
 
-        <Pressable style={styles.registerButton} onPress={handleCadastro}>
-          <Text style={styles.registerButtonText}>
-            Criar conta
-          </Text>
+        <Pressable
+          style={[styles.registerButton, criando && styles.registerButtonDisabled]}
+          onPress={handleCadastro}
+          disabled={criando}
+          accessibilityRole="button"
+        >
+          {criando ? (
+            <View style={styles.loadingRow}>
+              <ActivityIndicator color="#FFFFFF" />
+              <Text style={[styles.registerButtonText, styles.loadingText]}>
+                Criando conta...
+              </Text>
+            </View>
+          ) : (
+            <Text style={styles.registerButtonText}>
+              Criar conta
+            </Text>
+          )}
         </Pressable>
 
         <Pressable>
@@ -201,6 +230,19 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginTop: 5,
     marginBottom: 20,
+  },
+
+  registerButtonDisabled: {
+    opacity: 0.8,
+  },
+
+  loadingRow: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+
+  loadingText: {
+    marginLeft: 8,
   },
 
   registerButtonText: {
