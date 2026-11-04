@@ -183,7 +183,7 @@ export default function Inicio() {
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionTitle}>Serviços disponíveis</Text>
               <Text style={styles.sectionSubtitle}>
-                Selecione um serviço para ver a fila e mais detalhes.
+                {'Toque em "Retirar senha" para entrar na fila do serviço.'}
               </Text>
             </View>
 
@@ -243,7 +243,7 @@ export default function Inicio() {
                         } as never)
                       }
                     >
-                      <Text style={styles.queueButtonText}>Ver fila</Text>
+                      <Text style={styles.queueButtonText}>Retirar senha</Text>
                       <Ionicons
                         name="chevron-forward"
                         size={14}

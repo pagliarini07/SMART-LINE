@@ -1,4 +1,4 @@
-import { validarCPF } from "@/utils/cpf";
+import { mascararCPF, validarCPF } from "@/utils/cpf";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { useEffect, useState } from "react";
@@ -312,11 +312,11 @@ export default function Perfil() {
               <Text style={styles.label}>CPF</Text>
               <TextInput
                 style={styles.input}
-                placeholder="Digite seu CPF"
+                placeholder="000.000.000-00"
                 keyboardType="numeric"
-                maxLength={11}
-                value={cpf}
-                onChangeText={(valor) => setCpf(apenasDigitos(valor))}
+                maxLength={14}
+                value={mascararCPF(cpf)}
+                onChangeText={(valor) => setCpf(apenasDigitos(valor).slice(0, 11))}
               />
 
               {erro ? <Text style={styles.errorText}>{erro}</Text> : null}
