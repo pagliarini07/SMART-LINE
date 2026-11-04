@@ -16,6 +16,7 @@ import AssistenteIA from "../../components/AssistenteIA";
 import BottomTabBar from "../../components/BottomTabBar";
 import { useAuth } from "../../hooks/useAuth";
 import { Categoria, listarCategorias, listarLocais, Local } from "../../services/locais";
+import { contarNaoLidas } from "../../services/notificacoes";
 import { getProfile } from "../../services/profiles";
 
 const COLORS = {
@@ -48,6 +49,7 @@ export default function Locais() {
   const [erro, setErro] = useState("");
   const [locais, setLocais] = useState<Local[]>([]);
   const [categorias, setCategorias] = useState<Categoria[]>([]);
+  const [naoLidas, setNaoLidas] = useState(0);
 
   useEffect(() => {
     async function carregarNomeUsuario() {
@@ -88,6 +90,18 @@ export default function Locais() {
     }
 
     carregarNomeUsuario();
+  }, [user]);
+
+  useEffect(() => {
+    if (!user) {
+      return;
+    }
+
+    contarNaoLidas(user.id)
+      .then(setNaoLidas)
+      .catch((error) => {
+        console.error("Erro ao contar notificações:", error);
+      });
   }, [user]);
 
   useEffect(() => {
@@ -169,6 +183,26 @@ export default function Locais() {
             </Text>
           </View>
         </View>
+
+        <Pressable
+          style={styles.bellButton}
+          onPress={() => router.push("/notificacoes" as never)}
+          accessibilityRole="button"
+          accessibilityLabel={
+            naoLidas > 0
+              ? `Notificações, ${naoLidas} não lidas`
+              : "Notificações"
+          }
+        >
+          <Ionicons name="notifications-outline" size={21} color={COLORS.blue} />
+          {naoLidas > 0 ? (
+            <View style={styles.bellBadge}>
+              <Text style={styles.bellBadgeText}>
+                {naoLidas > 9 ? "9+" : naoLidas}
+              </Text>
+            </View>
+          ) : null}
+        </Pressable>
 
         <Text style={styles.hello}>
           {nomeUsuario ? `Olá, ${nomeUsuario}!` : "Olá!"}
@@ -858,5 +892,37 @@ const styles = StyleSheet.create({
   clearButton: {
     padding: 6,
     marginLeft: 4,
+  },
+
+  bellButton: {
+    position: "absolute",
+    top: 28,
+    right: 20,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: COLORS.white,
+    alignItems: "center",
+    justifyContent: "center",
+    zIndex: 2,
+  },
+
+  bellBadge: {
+    position: "absolute",
+    top: -3,
+    right: -3,
+    minWidth: 18,
+    height: 18,
+    borderRadius: 9,
+    paddingHorizontal: 4,
+    backgroundColor: "#D32F2F",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  bellBadgeText: {
+    color: COLORS.white,
+    fontSize: 10,
+    fontWeight: "700",
   },
 });

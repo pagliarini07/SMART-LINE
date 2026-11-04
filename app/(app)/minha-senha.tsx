@@ -11,6 +11,7 @@ import {
   View,
 } from "react-native";
 import BottomTabBar from "../../components/BottomTabBar";
+import ConfirmacaoInline from "../../components/ConfirmacaoInline";
 import { useAuth } from "../../hooks/useAuth";
 import {
   contarNaoLidas,
@@ -43,6 +44,7 @@ export default function MinhaSenha() {
   const [naoLidas, setNaoLidas] = useState(0);
   const [saindo, setSaindo] = useState(false);
   const [erroSair, setErroSair] = useState("");
+  const [confirmandoSaida, setConfirmandoSaida] = useState(false);
   const [saiuDaFila, setSaiuDaFila] = useState(false);
 
   useEffect(() => {
@@ -93,6 +95,7 @@ export default function MinhaSenha() {
       await cancelarSenha(senhaAtiva.id);
       setSenhaAtiva(null);
       setSaiuDaFila(true);
+      setConfirmandoSaida(false);
     } catch (error) {
       console.error("Erro ao sair da fila:", error);
       setErroSair(mensagemErroCancelamento(error));
@@ -168,17 +171,28 @@ export default function MinhaSenha() {
               <Text style={styles.leaveError}>{erroSair}</Text>
             ) : null}
 
-            <Pressable
-              style={[styles.leaveButton, saindo && styles.leaveButtonDisabled]}
-              onPress={sairDaFila}
-              disabled={saindo}
-            >
-              {saindo ? (
-                <ActivityIndicator color="#D32F2F" />
-              ) : (
+            {confirmandoSaida ? (
+              <View style={styles.confirmacao}>
+                <ConfirmacaoInline
+                  mensagem="Tem certeza? Você vai perder seu lugar na fila e precisará retirar uma nova senha."
+                  textoCancelar="Continuar na fila"
+                  textoConfirmar="Sim, sair"
+                  onCancelar={() => setConfirmandoSaida(false)}
+                  onConfirmar={sairDaFila}
+                  carregando={saindo}
+                />
+              </View>
+            ) : (
+              <Pressable
+                style={styles.leaveButton}
+                onPress={() => {
+                  setErroSair("");
+                  setConfirmandoSaida(true);
+                }}
+              >
                 <Text style={styles.leaveButtonText}>Sair da fila</Text>
-              )}
-            </Pressable>
+              </Pressable>
+            )}
           </>
         ) : (
           <View style={styles.emptyState}>
@@ -389,8 +403,9 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
 
-  leaveButtonDisabled: {
-    opacity: 0.7,
+  confirmacao: {
+    width: "100%",
+    marginTop: 20,
   },
 
   leaveError: {
