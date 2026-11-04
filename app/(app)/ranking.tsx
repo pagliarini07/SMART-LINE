@@ -96,61 +96,64 @@ export default function RankingScreen() {
     );
   }
 
+  // O cabeçalho (com o voltar) aparece em todos os estados — antes, as telas
+  // de carregando e de erro não tinham nenhuma saída.
+  const cabecalho = (
+    <View style={styles.header}>
+      <Pressable
+        style={styles.backButton}
+        onPress={() => router.back()}
+        accessibilityRole="button"
+        accessibilityLabel="Voltar"
+      >
+        <Ionicons name="arrow-back" size={22} color={COLORS.text} />
+      </Pressable>
+
+      <View style={styles.headerText}>
+        <Text style={styles.title}>Ranking</Text>
+
+        <Text style={styles.subtitle}>
+          Veja a média de avaliações dos locais
+        </Text>
+      </View>
+    </View>
+  );
+
   if (loading) {
     return (
-      <View style={styles.center}>
-        <ActivityIndicator
-          size="large"
-          color={COLORS.blue}
-        />
+      <View style={styles.container}>
+        {cabecalho}
 
-        <Text style={styles.loadingText}>
-          Carregando ranking...
-        </Text>
+        <View style={styles.center}>
+          <ActivityIndicator size="large" color={COLORS.blue} />
+
+          <Text style={styles.loadingText}>Carregando ranking...</Text>
+        </View>
       </View>
     );
   }
 
   if (error) {
     return (
-      <View style={styles.center}>
-        <Ionicons
-          name="alert-circle-outline"
-          size={48}
-          color={COLORS.secondary}
-        />
+      <View style={styles.container}>
+        {cabecalho}
 
-        <Text style={styles.errorText}>
-          {error}
-        </Text>
+        <View style={styles.center}>
+          <Ionicons
+            name="alert-circle-outline"
+            size={48}
+            color={COLORS.secondary}
+          />
+
+          <Text style={styles.errorText}>{error}</Text>
+        </View>
       </View>
     );
   }
 
   return (
     <View style={styles.container}>
-        <View style={styles.header}>
-        <Pressable
-            style={styles.backButton}
-            onPress={() => router.back()}
-        >
-            <Ionicons
-            name="arrow-back"
-            size={22}
-            color={COLORS.text}
-            />
-        </Pressable>
-
-        <View style={styles.headerText}>
-            <Text style={styles.title}>
-            Ranking
-            </Text>
-
-            <Text style={styles.subtitle}>
-            Veja a média de avaliações dos locais
-            </Text>
-        </View>
-        </View>
+      {cabecalho}
 
       <FlatList
         data={ranking}

@@ -197,6 +197,17 @@ export default function Locais() {
               value ={busca}
               onChangeText={setBusca}
             />
+
+            {busca ? (
+              <Pressable
+                onPress={() => setBusca("")}
+                style={styles.clearButton}
+                accessibilityRole="button"
+                accessibilityLabel="Limpar busca"
+              >
+                <Ionicons name="close-circle" size={20} color={COLORS.secondary} />
+              </Pressable>
+            ) : null}
           </View>
 
           <ScrollView
@@ -309,7 +320,13 @@ export default function Locais() {
                   </View>
 
                   <View style={styles.localContent}>
-                    <View style={styles.localTitleRow}>
+                    {/* A seta indica que o título abre os serviços do local. */}
+                    <Pressable
+                      style={styles.localTitleRow}
+                      onPress={() => abrirServicos(local.id)}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Ver serviços de ${local.nome}`}
+                    >
                       <Text style={styles.localName} numberOfLines={1}>
                         {local.nome}
                       </Text>
@@ -319,7 +336,7 @@ export default function Locais() {
                         size={18}
                         color={COLORS.text}
                       />
-                    </View>
+                    </Pressable>
 
                     <View style={styles.addressRow}>
                       <Ionicons
@@ -430,17 +447,6 @@ export default function Locais() {
             )}
           </View>
 
-          <Pressable style={styles.mapButton}>
-            <Text style={styles.mapText}>
-              Ver mais locais no mapa
-            </Text>
-
-            <Ionicons
-              name="chevron-forward"
-              size={13}
-              color={COLORS.blue}
-            />
-          </Pressable>
         </ScrollView>
       </View>
 
@@ -817,21 +823,6 @@ const styles = StyleSheet.create({
     marginLeft: 5,
   },
 
-  mapButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    marginTop: 5,
-    marginBottom: 5,
-  },
-
-  mapText: {
-    color: COLORS.blue,
-    fontSize: 12,
-    fontWeight: "600",
-    marginRight: 3,
-  },
-
   emptyState: {
     alignItems: "center",
     justifyContent: "center",
@@ -862,5 +853,10 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginTop: 6,
     lineHeight: 17,
-  },  
+  },
+
+  clearButton: {
+    padding: 6,
+    marginLeft: 4,
+  },
 });

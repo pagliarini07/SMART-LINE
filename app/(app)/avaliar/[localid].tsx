@@ -48,6 +48,7 @@ export default function AvaliarLocal() {
   const [carregando, setCarregando] = useState(true);
   const [salvando, setSalvando] = useState(false);
   const [erro, setErro] = useState("");
+  const [salvo, setSalvo] = useState(false);
 
   const localId = Array.isArray(localid)
     ? localid[0]
@@ -100,7 +101,9 @@ export default function AvaliarLocal() {
         await criarAvaliacao(localId, nota);
       }
 
-      router.back();
+      // Mostra a confirmação antes de voltar pra tela anterior.
+      setSalvo(true);
+      setTimeout(() => router.back(), 1200);
     } catch (error) {
       console.error("Erro ao salvar avaliação:", error);
       setErro("Não foi possível salvar sua avaliação.");
@@ -259,14 +262,23 @@ export default function AvaliarLocal() {
           </Text>
         )}
 
+        {salvo && (
+          <View style={styles.successBox}>
+            <Ionicons name="checkmark-circle" size={18} color="#1B7F45" />
+            <Text style={styles.successText}>
+              Avaliação salva! Obrigado por ajudar outros usuários.
+            </Text>
+          </View>
+        )}
+
         <Pressable
           style={[
             styles.saveButton,
-            (salvando || nota === 0) &&
+            (salvando || salvo || nota === 0) &&
               styles.saveButtonDisabled,
           ]}
           onPress={salvarAvaliacao}
-          disabled={salvando || nota === 0}
+          disabled={salvando || salvo || nota === 0}
         >
           {salvando ? (
             <ActivityIndicator color={COLORS.white} />
@@ -464,5 +476,23 @@ const styles = StyleSheet.create({
   backButtonText: {
     color: COLORS.white,
     fontWeight: "700",
+  },
+
+  successBox: {
+    width: "100%",
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#EAF8EF",
+    borderRadius: 12,
+    padding: 12,
+    marginTop: 15,
+  },
+
+  successText: {
+    flex: 1,
+    color: "#1B7F45",
+    fontSize: 13,
+    fontWeight: "600",
+    marginLeft: 8,
   },
 });

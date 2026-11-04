@@ -1,11 +1,12 @@
 import { Redirect, Stack } from "expo-router";
+import TelaCarregando from "../../components/TelaCarregando";
 import { useAuth } from "../../hooks/useAuth";
 
 export default function AppLayout() {
   const { isAuthenticated, isLoading } = useAuth();
 
   if (isLoading) {
-    return null;
+    return <TelaCarregando />;
   }
 
   if (!isAuthenticated) {

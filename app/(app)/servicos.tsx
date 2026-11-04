@@ -27,6 +27,7 @@ const COLORS = {
   lightBlue: "#EDF4FF",
   borderBlue: "#CFE0FF",
   green: "#1FAE59",
+  red: "#D32F2F",
   yellowSoft: "#FFF3D6",
 };
 
@@ -151,8 +152,18 @@ export default function Inicio() {
                 </View>
 
                 <View style={styles.statusPill}>
-                  <View style={styles.statusDot} />
-                  <Text style={styles.statusText}>
+                  <View
+                    style={[
+                      styles.statusDot,
+                      !unidade.aberto && styles.statusDotFechado,
+                    ]}
+                  />
+                  <Text
+                    style={[
+                      styles.statusText,
+                      !unidade.aberto && styles.statusTextFechado,
+                    ]}
+                  >
                     {unidade.aberto ? "Aberto" : "Fechado"}
                   </Text>
                 </View>
@@ -172,7 +183,7 @@ export default function Inicio() {
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionTitle}>Serviços disponíveis</Text>
               <Text style={styles.sectionSubtitle}>
-                Selecione um serviço para ver a fila e mais detalhes.
+                {'Toque em "Retirar senha" para entrar na fila do serviço.'}
               </Text>
             </View>
 
@@ -232,7 +243,7 @@ export default function Inicio() {
                         } as never)
                       }
                     >
-                      <Text style={styles.queueButtonText}>Ver fila</Text>
+                      <Text style={styles.queueButtonText}>Retirar senha</Text>
                       <Ionicons
                         name="chevron-forward"
                         size={14}
@@ -403,6 +414,14 @@ const styles = StyleSheet.create({
     color: COLORS.green,
     fontSize: 12,
     fontWeight: "600",
+  },
+
+  statusDotFechado: {
+    backgroundColor: COLORS.red,
+  },
+
+  statusTextFechado: {
+    color: COLORS.red,
   },
 
   unitWaiting: {

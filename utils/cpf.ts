@@ -1,5 +1,18 @@
 
 /**
+ * Aplica a máscara 000.000.000-00 enquanto o usuário digita (aceita CPF
+ * incompleto: "1234" vira "123.4").
+ */
+export function mascararCPF(valor: string): string {
+  const digitos = valor.replace(/\D/g, "").slice(0, 11);
+
+  return digitos
+    .replace(/^(\d{3})(\d)/, "$1.$2")
+    .replace(/^(\d{3})\.(\d{3})(\d)/, "$1.$2.$3")
+    .replace(/\.(\d{3})(\d{1,2})$/, ".$1-$2");
+}
+
+/**
  * Valida um CPF usando os dois dígitos verificadores.
  * Aceita CPF com ou sem pontuação.
  */
