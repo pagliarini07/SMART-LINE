@@ -16,6 +16,7 @@ import { mensagemErroAuth } from "../../utils/errors";
 export default function Login() {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
+    const [mostrarSenha, setMostrarSenha] = useState(false);
     const [error, setError] = useState("");
     const [entrando, setEntrando] = useState(false);
     const { signIn } = useAuth();
@@ -85,19 +86,39 @@ export default function Login() {
           value={email}
           onChangeText={setEmail}
           editable={!entrando}
+          returnKeyType="next"
         />
 
         <Text style={styles.label}>
           Senha
         </Text>
 
-        <TextInput
-          style={styles.inputSenha}
-          placeholder="Digite sua senha"
-          secureTextEntry
-          value={password}
-          onChangeText={setPassword}
-        />
+        <View style={styles.senhaContainer}>
+          <TextInput
+            style={styles.inputSenha}
+            placeholder="Digite sua senha"
+            secureTextEntry={!mostrarSenha}
+            value={password}
+            onChangeText={setPassword}
+            editable={!entrando}
+            returnKeyType="go"
+            onSubmitEditing={handleLogin}
+          />
+
+          <Pressable
+            style={styles.eyeButton}
+            onPress={() => setMostrarSenha((valor) => !valor)}
+            accessibilityRole="button"
+            accessibilityLabel={mostrarSenha ? "Ocultar senha" : "Mostrar senha"}
+            disabled={entrando}
+          >
+            <Ionicons
+              name={mostrarSenha ? "eye-off-outline" : "eye-outline"}
+              size={22}
+              color="#65708A"
+            />
+          </Pressable>
+        </View>
 
         <Pressable
           onPress={() => router.push("/forgot-password")}
@@ -190,15 +211,29 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
 
-    inputSenha: {
+  senhaContainer: {
     height: 50,
     backgroundColor: "#FFFFFF",
     borderWidth: 1,
     borderColor: "#D9E0EA",
     borderRadius: 12,
-    paddingHorizontal: 15,
     marginBottom: 12,
+    flexDirection: "row",
+    alignItems: "center",
+  },
+
+  inputSenha: {
+    flex: 1,
+    height: "100%",
+    paddingHorizontal: 15,
     fontSize: 16,
+  },
+
+  eyeButton: {
+    height: 50,
+    width: 50,
+    alignItems: "center",
+    justifyContent: "center",
   },
 
   loginButton: {
