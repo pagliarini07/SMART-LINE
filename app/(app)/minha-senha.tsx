@@ -33,6 +33,9 @@ const COLORS = {
   secondary: "#65708A",
   lightBlue: "#EDF4FF",
   borderBlue: "#CFE0FF",
+  orange: "#E67E22",
+  orangeSoft: "#FFF3E6",
+  orangeBorder: "#F6D6AE",
 };
 
 export default function MinhaSenha() {
@@ -164,6 +167,18 @@ export default function MinhaSenha() {
               />
               <Text style={styles.infoText}>
                 Você será avisado quando estiver próximo de ser chamado.
+              </Text>
+            </View>
+
+            <View style={styles.warningCard}>
+              <Ionicons
+                name="alert-circle-outline"
+                size={20}
+                color={COLORS.orange}
+              />
+              <Text style={styles.warningText}>
+                Não comparecer quando sua senha for chamada zera sua
+                sequência de atendimentos.
               </Text>
             </View>
 
@@ -384,6 +399,26 @@ const styles = StyleSheet.create({
     color: COLORS.secondary,
     fontSize: 12.5,
     marginLeft: 10,
+  },
+
+  warningCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: COLORS.orangeSoft,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: COLORS.orangeBorder,
+    padding: 14,
+    marginTop: 12,
+    width: "100%",
+  },
+
+  warningText: {
+    flex: 1,
+    color: COLORS.text,
+    fontSize: 12.5,
+    marginLeft: 10,
+    lineHeight: 17,
   },
 
   leaveButton: {

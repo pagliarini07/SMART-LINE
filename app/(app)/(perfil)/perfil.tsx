@@ -65,6 +65,7 @@ export default function Perfil() {
   const [sucesso, setSucesso] = useState("");
   const [confirmandoSaida, setConfirmandoSaida] = useState(false);
   const [saindo, setSaindo] = useState(false);
+  const [erroSair, setErroSair] = useState("");
 
   const [nome, setNome] = useState("");
   const [email, setEmail] = useState("");
@@ -235,13 +236,16 @@ export default function Perfil() {
 
   const handleSair = async () => {
     setSaindo(true);
+    setErroSair("");
 
     try {
       await signOut();
       router.replace("/login");
     } catch (error) {
       console.error("Erro ao encerrar sessão:", error);
-    } finally {
+      setErroSair(
+        "Não foi possível sair da conta agora. Verifique sua internet e tente de novo."
+      );
       setSaindo(false);
     }
   };
@@ -501,6 +505,10 @@ export default function Perfil() {
         </Pressable>
 
         {/* SAIR */}
+        {erroSair ? (
+          <Text style={styles.logoutErrorText}>{erroSair}</Text>
+        ) : null}
+
         {confirmandoSaida ? (
           <View style={styles.logoutConfirm}>
             <ConfirmacaoInline
@@ -516,6 +524,7 @@ export default function Perfil() {
           <Pressable
             style={styles.logoutButton}
             onPress={() => {
+              setErroSair("");
               setConfirmandoSaida(true);
             }}
           >
@@ -585,6 +594,13 @@ const styles = StyleSheet.create({
 
   logoutConfirm: {
     marginTop: 20,
+  },
+
+  logoutErrorText: {
+    color: "#D32F2F",
+    fontSize: 12.5,
+    textAlign: "center",
+    marginTop: 16,
   },
 
   avatarCard: {

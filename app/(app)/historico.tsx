@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Pressable,
@@ -78,31 +78,32 @@ export default function Historico() {
   const [carregandoMais, setCarregandoMais] = useState(false);
   const [erroMais, setErroMais] = useState("");
 
-  useEffect(() => {
-    async function carregarHistorico() {
-      if (!user) {
-        setCarregando(false);
-        return;
-      }
-
-      try {
-        setErro("");
-
-        const { itens, temMais: haMais } = await getHistoricoSenhas(user.id);
-
-        setHistorico(itens);
-        setPagina(0);
-        setTemMais(haMais);
-      } catch (error) {
-        console.error("Erro ao carregar histórico:", error);
-        setErro("Não foi possível carregar seu histórico agora.");
-      } finally {
-        setCarregando(false);
-      }
+  const carregarHistorico = useCallback(async () => {
+    if (!user) {
+      setCarregando(false);
+      return;
     }
 
-    carregarHistorico();
+    setCarregando(true);
+    setErro("");
+
+    try {
+      const { itens, temMais: haMais } = await getHistoricoSenhas(user.id);
+
+      setHistorico(itens);
+      setPagina(0);
+      setTemMais(haMais);
+    } catch (error) {
+      console.error("Erro ao carregar histórico:", error);
+      setErro("Não foi possível carregar seu histórico agora.");
+    } finally {
+      setCarregando(false);
+    }
   }, [user]);
+
+  useEffect(() => {
+    carregarHistorico();
+  }, [carregarHistorico]);
 
   async function carregarMais() {
     if (!user || carregandoMais || !temMais) {
@@ -281,14 +282,25 @@ export default function Historico() {
               "Assim que você retirar e concluir uma senha, o histórico dos seus atendimentos aparece aqui."}
           </Text>
 
-          <Pressable
-            style={styles.emptyButton}
-            onPress={() => router.push("/locais")}
-          >
-            <Text style={styles.emptyButtonText}>
-              Ver locais
-            </Text>
-          </Pressable>
+          {erro ? (
+            <Pressable
+              style={styles.emptyButton}
+              onPress={carregarHistorico}
+            >
+              <Text style={styles.emptyButtonText}>
+                Tentar novamente
+              </Text>
+            </Pressable>
+          ) : (
+            <Pressable
+              style={styles.emptyButton}
+              onPress={() => router.push("/locais")}
+            >
+              <Text style={styles.emptyButtonText}>
+                Ver locais
+              </Text>
+            </Pressable>
+          )}
         </View>
       )}
 

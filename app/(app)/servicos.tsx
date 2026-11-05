@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Pressable,
@@ -38,46 +38,30 @@ export default function Inicio() {
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState("");
 
-  useEffect(() => {
-    let montado = true;
-
-    async function carregarServicos() {
-      if (!localId) {
-        if (montado) {
-          setErro("Local não informado.");
-          setCarregando(false);
-        }
-        return;
-      }
-
-      try {
-        setCarregando(true);
-        setErro("");
-
-        const resultado = await listarServicosPorLocal(localId);
-
-        if (montado) {
-          setDados(resultado);
-        }
-      } catch (error) {
-        console.error("Erro ao carregar serviços:", error);
-
-        if (montado) {
-          setErro("Não foi possível carregar os serviços agora.");
-        }
-      } finally {
-        if (montado) {
-          setCarregando(false);
-        }
-      }
+  const carregarServicos = useCallback(async () => {
+    if (!localId) {
+      setErro("Local não informado.");
+      setCarregando(false);
+      return;
     }
 
-    carregarServicos();
+    try {
+      setCarregando(true);
+      setErro("");
 
-    return () => {
-      montado = false;
-    };
+      const resultado = await listarServicosPorLocal(localId);
+      setDados(resultado);
+    } catch (error) {
+      console.error("Erro ao carregar serviços:", error);
+      setErro("Não foi possível carregar os serviços agora.");
+    } finally {
+      setCarregando(false);
+    }
   }, [localId]);
+
+  useEffect(() => {
+    carregarServicos();
+  }, [carregarServicos]);
 
   const unidade = dados?.unidade;
   const servicos = dados?.servicos ?? [];
@@ -126,10 +110,20 @@ export default function Inicio() {
             style={{ marginTop: 50 }}
           />
         ) : erro ? (
-          <View style={{ paddingHorizontal: 30, paddingVertical: 50 }}>
-            <Text style={[styles.sectionSubtitle, { textAlign: "center" }]}>
+          <View style={styles.errorContainer}>
+            <Ionicons name="alert-circle-outline" size={36} color={COLORS.red} />
+
+            <Text style={[styles.sectionSubtitle, { textAlign: "center", marginTop: 10 }]}>
               {erro}
             </Text>
+
+            <Pressable
+              style={styles.retryButton}
+              onPress={carregarServicos}
+              accessibilityRole="button"
+            >
+              <Text style={styles.retryButtonText}>Tentar novamente</Text>
+            </Pressable>
           </View>
         ) : unidade ? (
           <>
@@ -540,6 +534,28 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: "700",
     marginRight: 2,
+  },
+
+  errorContainer: {
+    alignItems: "center",
+    paddingHorizontal: 30,
+    paddingVertical: 50,
+  },
+
+  retryButton: {
+    height: 44,
+    paddingHorizontal: 22,
+    backgroundColor: COLORS.blue,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 16,
+  },
+
+  retryButtonText: {
+    color: COLORS.white,
+    fontSize: 13.5,
+    fontWeight: "700",
   },
 
 });
