@@ -4,7 +4,7 @@ import {
   Stack,
   useLocalSearchParams,
 } from "expo-router";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Pressable,
@@ -54,36 +54,44 @@ export default function AvaliarLocal() {
     ? localid[0]
     : localid;
 
-  useEffect(() => {
-    async function carregarAvaliacao() {
-      if (!localId) {
-        setErro("Local não encontrado.");
-        setCarregando(false);
-        return;
-      }
-
-      try {
-        const [locais, avaliacao] = await Promise.all([
-          buscarLocaisPorIds([localId]),
-          buscarMinhaAvaliacao(localId),
-        ]);
-
-        setLocal(locais[0] ?? null);
-
-        if (avaliacao) {
-          setNota(avaliacao.nota);
-          setAvaliacaoId(avaliacao.id);
-        }
-      } catch (error) {
-        console.error("Erro ao carregar avaliação:", error);
-        setErro("Não foi possível carregar sua avaliação.");
-      } finally {
-        setCarregando(false);
-      }
+  const carregarAvaliacao = useCallback(async () => {
+    if (!localId) {
+      // Sem localId na rota não é uma falha de conexão -- é mesmo um link
+      // inválido, então aqui "local não encontrado" continua correto.
+      setErro("");
+      setLocal(null);
+      setCarregando(false);
+      return;
     }
 
-    carregarAvaliacao();
+    setCarregando(true);
+    setErro("");
+
+    try {
+      const [locais, avaliacao] = await Promise.all([
+        buscarLocaisPorIds([localId]),
+        buscarMinhaAvaliacao(localId),
+      ]);
+
+      setLocal(locais[0] ?? null);
+
+      if (avaliacao) {
+        setNota(avaliacao.nota);
+        setAvaliacaoId(avaliacao.id);
+      }
+    } catch (error) {
+      console.error("Erro ao carregar avaliação:", error);
+      // Falha de conexão: o local pode existir, só não conseguimos
+      // confirmar. Não confundir com "local não encontrado" (ver render).
+      setErro("Não foi possível conectar ao servidor agora.");
+    } finally {
+      setCarregando(false);
+    }
   }, [localId]);
+
+  useEffect(() => {
+    carregarAvaliacao();
+  }, [carregarAvaliacao]);
 
   async function salvarAvaliacao() {
     if (!localId || nota === 0) {
@@ -134,27 +142,37 @@ export default function AvaliarLocal() {
   }
 
   if (!local) {
+    // Falha de conexão (erro setado) é um problema diferente de o local
+    // realmente não existir -- antes as duas situações mostravam a mesma
+    // mensagem de "Local não encontrado", o que confundia falha de rede
+    // com link inválido.
+    const falhaConexao = erro !== "";
+
     return (
       <SafeAreaView style={styles.screen}>
         <Stack.Screen options={{ headerShown: false }} />
 
         <View style={styles.errorContainer}>
           <Ionicons
-            name="alert-circle-outline"
+            name={falhaConexao ? "cloud-offline-outline" : "alert-circle-outline"}
             size={50}
             color={COLORS.red}
           />
 
           <Text style={styles.errorTitle}>
-            Local não encontrado
+            {falhaConexao ? "Falha de conexão" : "Local não encontrado"}
           </Text>
+
+          {falhaConexao ? (
+            <Text style={styles.errorDescription}>{erro}</Text>
+          ) : null}
 
           <Pressable
             style={styles.backButton}
-            onPress={() => router.back()}
+            onPress={falhaConexao ? carregarAvaliacao : () => router.back()}
           >
             <Text style={styles.backButtonText}>
-              Voltar
+              {falhaConexao ? "Tentar novamente" : "Voltar"}
             </Text>
           </Pressable>
         </View>
@@ -463,6 +481,14 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: "700",
     marginTop: 12,
+  },
+
+  errorDescription: {
+    color: COLORS.secondary,
+    fontSize: 13,
+    textAlign: "center",
+    marginTop: 8,
+    paddingHorizontal: 10,
   },
 
   backButton: {

@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { router, Stack } from "expo-router";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Pressable,
@@ -104,26 +104,29 @@ export default function Locais() {
       });
   }, [user]);
 
-  useEffect(() => {
-    async function carregarDados() {
-      try {
-        const [locaisData, categoriasData] = await Promise.all([
-          listarLocais(),
-          listarCategorias(),
-        ]);
+  const carregarDados = useCallback(async () => {
+    setCarregando(true);
+    setErro("");
 
-        setLocais(locaisData);
-        setCategorias(categoriasData);
-      } catch (error) {
-        console.error("Erro ao carregar locais:", error);
-        setErro("Não foi possível carregar os locais agora.");
-      } finally {
-        setCarregando(false);
-      }
+    try {
+      const [locaisData, categoriasData] = await Promise.all([
+        listarLocais(),
+        listarCategorias(),
+      ]);
+
+      setLocais(locaisData);
+      setCategorias(categoriasData);
+    } catch (error) {
+      console.error("Erro ao carregar locais:", error);
+      setErro("Não foi possível carregar os locais agora.");
+    } finally {
+      setCarregando(false);
     }
-
-    carregarDados();
   }, []);
+
+  useEffect(() => {
+    carregarDados();
+  }, [carregarDados]);
 
   const abrirServicos = (localId: string) => {
     router.push({
@@ -477,6 +480,16 @@ export default function Locais() {
                 <Text style={styles.emptyDescription}>
                   {erro || "Não encontramos locais para sua busca ou categoria."}
                 </Text>
+
+                {erro ? (
+                  <Pressable
+                    style={styles.retryButton}
+                    onPress={carregarDados}
+                    accessibilityRole="button"
+                  >
+                    <Text style={styles.retryButtonText}>Tentar novamente</Text>
+                  </Pressable>
+                ) : null}
               </View>
             )}
           </View>
@@ -887,6 +900,22 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginTop: 6,
     lineHeight: 17,
+  },
+
+  retryButton: {
+    height: 44,
+    paddingHorizontal: 22,
+    backgroundColor: COLORS.blue,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 14,
+  },
+
+  retryButtonText: {
+    color: COLORS.white,
+    fontSize: 13.5,
+    fontWeight: "700",
   },
 
   clearButton: {

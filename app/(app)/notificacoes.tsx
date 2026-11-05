@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Pressable,
@@ -44,26 +44,29 @@ export default function Notificacoes() {
   const [erro, setErro] = useState("");
   const [notificacoes, setNotificacoes] = useState<Notificacao[]>([]);
 
-  useEffect(() => {
-    async function carregar() {
-      if (!user) {
-        setCarregando(false);
-        return;
-      }
-
-      try {
-        const dados = await listarNotificacoes(user.id);
-        setNotificacoes(dados);
-      } catch (error) {
-        console.error("Erro ao carregar notificações:", error);
-        setErro("Não foi possível carregar suas notificações agora.");
-      } finally {
-        setCarregando(false);
-      }
+  const carregar = useCallback(async () => {
+    if (!user) {
+      setCarregando(false);
+      return;
     }
 
-    carregar();
+    setCarregando(true);
+    setErro("");
+
+    try {
+      const dados = await listarNotificacoes(user.id);
+      setNotificacoes(dados);
+    } catch (error) {
+      console.error("Erro ao carregar notificações:", error);
+      setErro("Não foi possível carregar suas notificações agora.");
+    } finally {
+      setCarregando(false);
+    }
   }, [user]);
+
+  useEffect(() => {
+    carregar();
+  }, [carregar]);
 
   const handleMarcarComoLida = async (notificacao: Notificacao) => {
     if (notificacao.lida) {
@@ -146,11 +149,23 @@ export default function Notificacoes() {
             />
           </View>
 
-          <Text style={styles.emptyTitle}>Nenhuma notificação ainda</Text>
+          <Text style={styles.emptyTitle}>
+            {erro ? "Não foi possível carregar" : "Nenhuma notificação ainda"}
+          </Text>
           <Text style={styles.emptyDescription}>
             {erro ||
               "Quando sua senha estiver perto de ser chamada, você vê o aviso aqui."}
           </Text>
+
+          {erro ? (
+            <Pressable
+              style={styles.retryButton}
+              onPress={carregar}
+              accessibilityRole="button"
+            >
+              <Text style={styles.retryButtonText}>Tentar novamente</Text>
+            </Pressable>
+          ) : null}
         </View>
       )}
 
@@ -286,5 +301,21 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginTop: 8,
     lineHeight: 18,
+  },
+
+  retryButton: {
+    height: 44,
+    paddingHorizontal: 22,
+    backgroundColor: COLORS.blue,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 16,
+  },
+
+  retryButtonText: {
+    color: COLORS.white,
+    fontSize: 13.5,
+    fontWeight: "700",
   },
 });

@@ -146,6 +146,14 @@ export default function RankingScreen() {
           />
 
           <Text style={styles.errorText}>{error}</Text>
+
+          <Pressable
+            style={styles.retryButton}
+            onPress={carregarRanking}
+            accessibilityRole="button"
+          >
+            <Text style={styles.retryButtonText}>Tentar novamente</Text>
+          </Pressable>
         </View>
       </View>
     );
@@ -307,6 +315,22 @@ const styles = StyleSheet.create({
     fontSize: 14,
     marginTop: 12,
     textAlign: "center",
+  },
+
+  retryButton: {
+    height: 44,
+    paddingHorizontal: 22,
+    backgroundColor: COLORS.blue,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 16,
+  },
+
+  retryButtonText: {
+    color: COLORS.white,
+    fontSize: 13.5,
+    fontWeight: "700",
   },
 
   empty: {
