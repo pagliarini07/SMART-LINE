@@ -254,7 +254,7 @@ export default function Locais() {
               onPress={() => setCategoriaAtiva(CATEGORIA_TODOS)}
               style={[
                 styles.category,
-                { width: 64 },
+                styles.categoryAuto,
                 categoriaAtiva === CATEGORIA_TODOS && styles.categoryActive,
               ]}
             >
@@ -643,7 +643,7 @@ const styles = StyleSheet.create({
 
   categoryText: {
     color: COLORS.text,
-    fontSize: 8.6,
+    fontSize: 12.5,
     fontWeight: "600",
     marginLeft: 5,
   },
