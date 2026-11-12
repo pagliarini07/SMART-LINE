@@ -29,7 +29,7 @@ type ServicoRow = {
   titulo: string;
   descricao: string | null;
   setor: string | null;
-
+  documentos_sugeridos?: string[] | null;
   local_id: string;
 };
 
@@ -121,7 +121,7 @@ export async function recomendarServico(
 
   const { data: servicos, error } = await supabase
     .from("servicos")
-    .select("id, titulo, descricao, setor, local_id")
+    .select("id, titulo, descricao, setor, documentos_sugeridos, local_id")
     .eq("ativo", true);
 
   if (error) {
@@ -199,7 +199,10 @@ export async function recomendarServico(
     pessoasAguardando: contagem.get(melhor.servico.id) ?? 0,
     confianca: melhor.confianca,
     motivo,
-    documentosSugeridos: documentosPadrao(melhor.servico.setor),
+    documentosSugeridos:
+      melhor.servico.documentos_sugeridos?.length
+        ? melhor.servico.documentos_sugeridos
+        : documentosPadrao(melhor.servico.setor),
     alternativas,
   };
 }
@@ -223,7 +226,7 @@ export async function montarRecomendacaoDaTriagem(
 
   const { data: servicos, error } = await supabase
     .from("servicos")
-    .select("id, titulo, descricao, setor, local_id")
+    .select("id, titulo, descricao, setor, documentos_sugeridos, local_id")
     .in("id", ids)
     .eq("ativo", true);
 
@@ -272,9 +275,11 @@ export async function montarRecomendacaoDaTriagem(
   // Documentos: os da IA primeiro; se ela não sugerir nenhum, os
   // cadastrados no serviço; por último, a lista padrão do setor.
   const documentosSugeridos =
-    resposta.documentos.length > 0
-      ? resposta.documentos
-      : documentosPadrao(principal.setor);
+    principal.documentos_sugeridos?.length
+      ? principal.documentos_sugeridos
+      : resposta.documentos.length > 0
+        ? resposta.documentos
+        : documentosPadrao(principal.setor);
 
   return {
     servicoId: principal.id,

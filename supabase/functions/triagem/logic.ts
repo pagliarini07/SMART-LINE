@@ -6,6 +6,7 @@ export type CatalogoServico = {
   local: string;
   aguardando: number;
   tempo_medio_min: number;
+  documentos_sugeridos: string[];
 };
 
 export type TriagemResposta = {

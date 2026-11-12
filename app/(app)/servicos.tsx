@@ -210,6 +210,10 @@ export default function Inicio() {
                         Setor: {servico.setor}
                       </Text>
 
+                      <Text style={styles.serviceSector}>
+                        Tempo médio estimado: {servico.tempoMedioMinutos} min
+                      </Text>
+
                       <View style={styles.serviceWaitingRow}>
                         <Ionicons
                           name="ellipse"
@@ -274,7 +278,7 @@ const styles = StyleSheet.create({
   },
 
   scrollContent: {
-    paddingBottom: 24,
+    paddingBottom: 70,
   },
 
   header: {

@@ -72,6 +72,30 @@ describe("recomendarServico", () => {
     });
   });
 
+
+  it("prioriza os documentos cadastrados no serviço", async () => {
+    const servicosComDocumentos = [
+      {
+        ...SERVICOS[0],
+        documentos_sugeridos: ["Certidão original", "CPF"],
+      },
+    ];
+
+    mockFrom
+      .mockReturnValueOnce(
+        queryBuilder({ data: servicosComDocumentos, error: null })
+      )
+      .mockReturnValueOnce(queryBuilder({ data: LOCAIS, error: null }))
+      .mockReturnValueOnce(queryBuilder({ data: [], error: null }));
+
+    const resultado = await recomendarServico("preciso da segunda via do RG");
+
+    expect(resultado?.documentosSugeridos).toEqual([
+      "Certidão original",
+      "CPF",
+    ]);
+  });
+
   it("retorna null quando o pedido não bate com nenhum serviço", async () => {
     mockFrom
       .mockReturnValueOnce(queryBuilder({ data: SERVICOS, error: null }))
