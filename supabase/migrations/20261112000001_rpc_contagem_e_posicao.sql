@@ -10,8 +10,8 @@
 -- Solução: duas funções SECURITY DEFINER que agregam no banco e
 -- devolvem só números (nunca linhas de senhas de outras pessoas).
 --
--- Como aplicar: cole este arquivo inteiro no SQL Editor do projeto no
--- supabase.com e execute. Idempotente (pode rodar mais de uma vez).
+-- Esta migration deve ser aplicada pelo fluxo versionado do Supabase.
+-- Idempotente: pode ser executada novamente sem duplicar estruturas.
 
 -- contagem_espera: quantas senhas ainda ativas existem pra um serviço.
 -- Puramente agregado -- não expõe nenhum dado individual.
