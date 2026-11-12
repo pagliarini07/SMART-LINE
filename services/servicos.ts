@@ -47,6 +47,35 @@ function estaAberto(
   return minutosAgora >= inicio && minutosAgora <= fim;
 }
 
+/**
+ * Recalcula somente as quantidades da fila dos serviços já carregados.
+ * Evita consultar novamente local, endereço, horários e catálogo durante
+ * a atualização automática da tela.
+ */
+export async function atualizarContagensServicos(
+  dadosAtuais: DadosServicosLocal
+): Promise<DadosServicosLocal> {
+  const ids = dadosAtuais.servicos.map((servico) => servico.id);
+  const contagem = await contarEsperaPorServico(ids);
+
+  const servicos = dadosAtuais.servicos.map((servico) => ({
+    ...servico,
+    pessoasAguardando: contagem.get(servico.id) ?? 0,
+  }));
+
+  return {
+    ...dadosAtuais,
+    unidade: {
+      ...dadosAtuais.unidade,
+      pessoasAguardando: servicos.reduce(
+        (total, servico) => total + servico.pessoasAguardando,
+        0
+      ),
+    },
+    servicos,
+  };
+}
+
 export async function listarServicosPorLocal(
   localId: string
 ): Promise<DadosServicosLocal> {

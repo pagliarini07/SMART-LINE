@@ -3,7 +3,13 @@ import { supabase } from "./supabase";
 // Status que já saíram da fila — qualquer outro valor de "status" conta
 // como senha ainda ativa/aguardando (não fixamos o nome exato do estado
 // "aguardando" aqui, só excluímos os que já terminaram).
-const STATUS_FINALIZADOS = ["atendido", "cancelado", "nao_compareceu"];
+const STATUS_FINALIZADOS = [
+  "atendido",
+  "cancelado",
+  "nao_compareceu",
+] as const;
+
+export type StatusAtendimento = (typeof STATUS_FINALIZADOS)[number];
 
 export type SenhaAtiva = {
   id: string;
@@ -11,8 +17,14 @@ export type SenhaAtiva = {
   codigo: string;
   servico: string;
   local: string;
+  status: string;
   posicao: number;
   tempoEstimadoMinutos: number;
+};
+
+export type AtualizacaoSenhaAtiva = {
+  senha: SenhaAtiva | null;
+  statusFinal: StatusAtendimento | null;
 };
 
 type SenhaComServico = {
@@ -106,9 +118,67 @@ export async function getSenhaAtiva(
     codigo: senha.codigo,
     servico: servico?.titulo ?? "Serviço",
     local: nomeLocal,
+    status: senha.status,
     posicao,
     tempoEstimadoMinutos:
       posicaoData?.tempo_estimado_minutos ?? posicao * tempoMedio,
+  };
+}
+
+/**
+ * Atualiza apenas os dados que realmente mudam enquanto o usuário
+ * acompanha a fila. Evita buscar novamente serviço e local a cada
+ * ciclo do polling.
+ */
+export async function atualizarSenhaAtiva(
+  senhaAtual: SenhaAtiva
+): Promise<AtualizacaoSenhaAtiva> {
+  const { data: senha, error } = await supabase
+    .from("senhas")
+    .select("status")
+    .eq("id", senhaAtual.id)
+    .maybeSingle<{ status: string }>();
+
+  if (error) {
+    throw error;
+  }
+
+  if (!senha) {
+    return {
+      senha: null,
+      statusFinal: null,
+    };
+  }
+
+  if (
+    (STATUS_FINALIZADOS as readonly string[]).includes(senha.status)
+  ) {
+    return {
+      senha: null,
+      statusFinal: senha.status as StatusAtendimento,
+    };
+  }
+
+  const { data: posicaoData, error: posicaoError } = await supabase
+    .rpc("posicao_senha", {
+      p_senha_id: senhaAtual.id,
+    })
+    .maybeSingle<PosicaoSenha>();
+
+  if (posicaoError) {
+    throw posicaoError;
+  }
+
+  return {
+    senha: {
+      ...senhaAtual,
+      status: senha.status,
+      posicao: posicaoData?.posicao ?? senhaAtual.posicao,
+      tempoEstimadoMinutos:
+        posicaoData?.tempo_estimado_minutos ??
+        senhaAtual.tempoEstimadoMinutos,
+    },
+    statusFinal: null,
   };
 }
 
@@ -191,11 +261,6 @@ export function mensagemErroCancelamento(error: unknown): string {
 
   return "Não foi possível sair da fila agora. Tente novamente.";
 }
-
-export type StatusAtendimento =
-  | "atendido"
-  | "cancelado"
-  | "nao_compareceu";
 
 export type AtendimentoHistorico = {
   id: string;
