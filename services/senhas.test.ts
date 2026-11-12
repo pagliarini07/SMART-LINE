@@ -140,11 +140,17 @@ describe("getSenhaAtiva", () => {
       )
       .mockReturnValueOnce(
         queryBuilder({ data: { nome: "Resolve Palmas" }, error: null })
-      )
-      // Posição caiu pra 1 (gente na frente foi atendida) -- antes, isso
-      // faria o código virar "A001". Agora o código não depende da
-      // posição: continua "A007".
-      .mockReturnValueOnce(queryBuilder({ count: 1, error: null }));
+      );
+
+    // Posição caiu pra 1 (gente na frente foi atendida) -- antes, isso
+    // faria o código virar "A001". Agora o código não depende da
+    // posição: continua "A007".
+    mockRpc.mockReturnValueOnce(
+      queryBuilder({
+        data: { posicao: 1, tempo_estimado_minutos: 5 },
+        error: null,
+      })
+    );
 
     const resultado = await getSenhaAtiva("usuario-1");
 
