@@ -22,6 +22,11 @@ type SenhaComServico = {
   retirada_em: string;
 };
 
+type PosicaoSenha = {
+  posicao: number;
+  tempo_estimado_minutos: number;
+};
+
 /**
  * Busca a senha ativa (ainda não finalizada) mais recente do usuário.
  * Retorna null se o usuário não tiver nenhuma senha em aberto.
@@ -75,20 +80,20 @@ export async function getSenhaAtiva(
     nomeLocal = local?.nome ?? "";
   }
 
-  // Posição na fila: quantas senhas do mesmo serviço, ainda não
-  // finalizadas, foram retiradas antes (ou no mesmo instante) da nossa.
-  const { count, error: countError } = await supabase
-    .from("senhas")
-    .select("id", { count: "exact", head: true })
-    .eq("servico_id", senha.servico_id)
-    .not("status", "in", `(${STATUS_FINALIZADOS.join(",")})`)
-    .lte("retirada_em", senha.retirada_em);
+  // Posição na fila e tempo estimado vêm da RPC posicao_senha (issue
+  // #93): contar direto na tabela senhas só enxergaria a própria senha
+  // do usuário, por causa do RLS -- a RPC agrega no banco (SECURITY
+  // DEFINER) e devolve só os dois números, sem expor senhas de
+  // ninguém.
+  const { data: posicaoData, error: posicaoError } = await supabase
+    .rpc("posicao_senha", { p_senha_id: senha.id })
+    .maybeSingle<PosicaoSenha>();
 
-  if (countError) {
-    throw countError;
+  if (posicaoError) {
+    throw posicaoError;
   }
 
-  const posicao = count && count > 0 ? count : 1;
+  const posicao = posicaoData?.posicao ?? 1;
   const tempoMedio = servico?.tempo_medio_minutos ?? 5;
   const prefixo = servico?.prefixo_senha ?? "";
 
@@ -99,7 +104,8 @@ export async function getSenhaAtiva(
     servico: servico?.titulo ?? "Serviço",
     local: nomeLocal,
     posicao,
-    tempoEstimadoMinutos: posicao * tempoMedio,
+    tempoEstimadoMinutos:
+      posicaoData?.tempo_estimado_minutos ?? posicao * tempoMedio,
   };
 }
 

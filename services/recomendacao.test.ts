@@ -1,5 +1,5 @@
 jest.mock("./supabase", () => ({
-  supabase: { from: jest.fn() },
+  supabase: { from: jest.fn(), rpc: jest.fn() },
 }));
 
 import { supabase } from "./supabase";
@@ -40,17 +40,21 @@ const SERVICOS = [
 const LOCAIS = [{ id: "local-1", nome: "Resolve Palmas — Centro" }];
 
 const mockFrom = supabase.from as jest.Mock;
+const mockRpc = supabase.rpc as jest.Mock;
 
 beforeEach(() => {
   mockFrom.mockReset();
+  mockRpc.mockReset();
+  // contagem_espera (issue #93): por padrão, fila vazia -- os testes que
+  // se importam com o número exato sobrescrevem isso.
+  mockRpc.mockResolvedValue({ data: 0, error: null });
 });
 
 describe("recomendarServico", () => {
   it("recomenda 'Emissão de documentos' pro exemplo da issue (2ª via de RG)", async () => {
     mockFrom
       .mockReturnValueOnce(queryBuilder({ data: SERVICOS, error: null }))
-      .mockReturnValueOnce(queryBuilder({ data: LOCAIS, error: null }))
-      .mockReturnValueOnce(queryBuilder({ data: [], error: null })); // contagem de senhas
+      .mockReturnValueOnce(queryBuilder({ data: LOCAIS, error: null }));
 
     const resultado = await recomendarServico(
       "preciso tirar a segunda via do meu RG"
@@ -61,6 +65,11 @@ describe("recomendarServico", () => {
     expect(resultado?.nomeLocal).toBe("Resolve Palmas — Centro");
     expect(resultado?.confianca).toBeGreaterThanOrEqual(LIMIAR_CONFIANCA);
     expect(resultado?.documentosSugeridos.length).toBeGreaterThan(0);
+    // Contagem de fila agora vem da RPC contagem_espera (issue #93),
+    // não mais de consultar a tabela senhas direto (bloqueada por RLS).
+    expect(mockRpc).toHaveBeenCalledWith("contagem_espera", {
+      p_servico_id: "servico-documentos",
+    });
   });
 
   it("retorna null quando o pedido não bate com nenhum serviço", async () => {

@@ -87,11 +87,22 @@ describe("getSenhaAtiva", () => {
       )
       .mockReturnValueOnce(
         queryBuilder({ data: { nome: "Resolve Palmas" }, error: null })
-      )
-      .mockReturnValueOnce(queryBuilder({ count: 3, error: null }));
+      );
+
+    // Posição e tempo estimado agora vêm da RPC posicao_senha (issue
+    // #93), não mais de um count() direto na tabela senhas.
+    mockRpc.mockReturnValueOnce(
+      queryBuilder({
+        data: { posicao: 3, tempo_estimado_minutos: 15 },
+        error: null,
+      })
+    );
 
     const resultado = await getSenhaAtiva("usuario-1");
 
+    expect(mockRpc).toHaveBeenCalledWith("posicao_senha", {
+      p_senha_id: "senha-1",
+    });
     expect(resultado).toEqual({
       id: "senha-1",
       servicoId: "servico-1",
