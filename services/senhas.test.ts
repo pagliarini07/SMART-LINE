@@ -61,13 +61,14 @@ describe("getSenhaAtiva", () => {
     expect(mockFrom).toHaveBeenCalledWith("senhas");
   });
 
-  it("monta codigo, posicao e tempo estimado a partir do servico/local reais", async () => {
+  it("monta a senha a partir do servico/local reais, com o codigo vindo direto da coluna", async () => {
     mockFrom
       .mockReturnValueOnce(
         queryBuilder({
           data: {
             id: "senha-1",
             servico_id: "servico-1",
+            codigo: "A003",
             status: "aguardando",
             retirada_em: "2026-01-01T10:00:00.000Z",
           },
@@ -78,7 +79,6 @@ describe("getSenhaAtiva", () => {
         queryBuilder({
           data: {
             titulo: "Emissão de documentos",
-            prefixo_senha: "A",
             tempo_medio_minutos: 5,
             local_id: "local-1",
           },
@@ -101,6 +101,44 @@ describe("getSenhaAtiva", () => {
       posicao: 3,
       tempoEstimadoMinutos: 15,
     });
+  });
+
+  it("codigo (#92): nunca é reconstruído a partir da posição -- mesmo com a posição mudando, o código continua o que veio do banco", async () => {
+    mockFrom
+      .mockReturnValueOnce(
+        queryBuilder({
+          data: {
+            id: "senha-1",
+            servico_id: "servico-1",
+            codigo: "A007",
+            status: "aguardando",
+            retirada_em: "2026-01-01T10:00:00.000Z",
+          },
+          error: null,
+        })
+      )
+      .mockReturnValueOnce(
+        queryBuilder({
+          data: {
+            titulo: "Emissão de documentos",
+            tempo_medio_minutos: 5,
+            local_id: "local-1",
+          },
+          error: null,
+        })
+      )
+      .mockReturnValueOnce(
+        queryBuilder({ data: { nome: "Resolve Palmas" }, error: null })
+      )
+      // Posição caiu pra 1 (gente na frente foi atendida) -- antes, isso
+      // faria o código virar "A001". Agora o código não depende da
+      // posição: continua "A007".
+      .mockReturnValueOnce(queryBuilder({ count: 1, error: null }));
+
+    const resultado = await getSenhaAtiva("usuario-1");
+
+    expect(resultado?.codigo).toBe("A007");
+    expect(resultado?.posicao).toBe(1);
   });
 
   it("propaga o erro quando a consulta principal falha", async () => {

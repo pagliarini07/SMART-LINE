@@ -18,6 +18,7 @@ export type SenhaAtiva = {
 type SenhaComServico = {
   id: string;
   servico_id: string;
+  codigo: string;
   status: string;
   retirada_em: string;
 };
@@ -31,7 +32,7 @@ export async function getSenhaAtiva(
 ): Promise<SenhaAtiva | null> {
   const { data: senha, error } = await supabase
     .from("senhas")
-    .select("id, servico_id, status, retirada_em")
+    .select("id, servico_id, codigo, status, retirada_em")
     .eq("usuario_id", userId)
     .not("status", "in", `(${STATUS_FINALIZADOS.join(",")})`)
     .order("retirada_em", { ascending: false })
@@ -51,7 +52,7 @@ export async function getSenhaAtiva(
   // nota no PR sobre verificar/corrigir constraints (issue #40/#41).
   const { data: servico, error: servicoError } = await supabase
     .from("servicos")
-    .select("titulo, prefixo_senha, tempo_medio_minutos, local_id")
+    .select("titulo, tempo_medio_minutos, local_id")
     .eq("id", senha.servico_id)
     .maybeSingle();
 
@@ -90,12 +91,14 @@ export async function getSenhaAtiva(
 
   const posicao = count && count > 0 ? count : 1;
   const tempoMedio = servico?.tempo_medio_minutos ?? 5;
-  const prefixo = servico?.prefixo_senha ?? "";
 
   return {
     id: senha.id,
     servicoId: senha.servico_id,
-    codigo: `${prefixo}${String(posicao).padStart(3, "0")}`,
+    // O código vem direto da coluna, nunca reconstruído a partir da
+    // posição (issue #92) -- a posição pode diminuir (gente sendo
+    // atendida na frente), mas o código da própria senha nunca muda.
+    codigo: senha.codigo,
     servico: servico?.titulo ?? "Serviço",
     local: nomeLocal,
     posicao,
