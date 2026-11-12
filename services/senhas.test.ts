@@ -4,6 +4,7 @@ jest.mock("./supabase", () => ({
 
 import { supabase } from "./supabase";
 import {
+  atualizarSenhaAtiva,
   cancelarSenha,
   getHistoricoSenhas,
   getSenhaAtiva,
@@ -109,6 +110,7 @@ describe("getSenhaAtiva", () => {
       codigo: "A003",
       servico: "Emissão de documentos",
       local: "Resolve Palmas",
+      status: "aguardando",
       posicao: 3,
       tempoEstimadoMinutos: 15,
     });
@@ -167,6 +169,66 @@ describe("getSenhaAtiva", () => {
     await expect(getSenhaAtiva("usuario-1")).rejects.toThrow(
       "falha de rede"
     );
+  });
+});
+
+describe("atualizarSenhaAtiva", () => {
+  const senhaAtual = {
+    id: "senha-1",
+    servicoId: "servico-1",
+    codigo: "A007",
+    servico: "Emissão de documentos",
+    local: "Resolve Palmas",
+    status: "aguardando",
+    posicao: 3,
+    tempoEstimadoMinutos: 15,
+  };
+
+  it("atualiza posição, estimativa e detecta quando a senha foi chamada", async () => {
+    mockFrom.mockReturnValueOnce(
+      queryBuilder({
+        data: { status: "chamado" },
+        error: null,
+      })
+    );
+
+    mockRpc.mockReturnValueOnce(
+      queryBuilder({
+        data: {
+          posicao: 1,
+          tempo_estimado_minutos: 5,
+        },
+        error: null,
+      })
+    );
+
+    const resultado = await atualizarSenhaAtiva(senhaAtual);
+
+    expect(resultado.statusFinal).toBeNull();
+    expect(resultado.senha).toMatchObject({
+      codigo: "A007",
+      status: "chamado",
+      posicao: 1,
+      tempoEstimadoMinutos: 5,
+    });
+  });
+
+  it("detecta quando a senha foi finalizada sem consultar posição novamente", async () => {
+    mockFrom.mockReturnValueOnce(
+      queryBuilder({
+        data: { status: "atendido" },
+        error: null,
+      })
+    );
+
+    const resultado = await atualizarSenhaAtiva(senhaAtual);
+
+    expect(resultado).toEqual({
+      senha: null,
+      statusFinal: "atendido",
+    });
+
+    expect(mockRpc).not.toHaveBeenCalled();
   });
 });
 

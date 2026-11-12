@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
-import { router } from "expo-router";
-import { useEffect, useState } from "react";
+import { router, useFocusEffect } from "expo-router";
+import { useCallback, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Pressable,
@@ -18,10 +18,12 @@ import {
   notificarSeProximo,
 } from "../../services/notificacoes";
 import {
+  atualizarSenhaAtiva,
   cancelarSenha,
   getSenhaAtiva,
   mensagemErroCancelamento,
   SenhaAtiva,
+  StatusAtendimento,
 } from "../../services/senhas";
 
 const COLORS = {
@@ -38,6 +40,8 @@ const COLORS = {
   orangeBorder: "#F6D6AE",
 };
 
+const POLLING_INTERVAL_MS = 10_000;
+
 export default function MinhaSenha() {
   const { user } = useAuth();
 
@@ -49,42 +53,151 @@ export default function MinhaSenha() {
   const [erroSair, setErroSair] = useState("");
   const [confirmandoSaida, setConfirmandoSaida] = useState(false);
   const [saiuDaFila, setSaiuDaFila] = useState(false);
+  const [statusFinal, setStatusFinal] =
+    useState<StatusAtendimento | null>(null);
 
-  useEffect(() => {
+  const senhaRef = useRef<SenhaAtiva | null>(null);
+  const atualizandoRef = useRef(false);
+  const notificacaoTentadaRef = useRef<string | null>(null);
+
+  const tentarNotificar = useCallback(
+    async (senha: SenhaAtiva) => {
+      if (
+        !user ||
+        senha.posicao > 2 ||
+        notificacaoTentadaRef.current === senha.id
+      ) {
+        return;
+      }
+
+      notificacaoTentadaRef.current = senha.id;
+
+      try {
+        await notificarSeProximo(user.id, senha);
+        setNaoLidas(await contarNaoLidas(user.id));
+      } catch (error) {
+        // Permite tentar novamente no próximo ciclo caso tenha sido
+        // uma falha real de rede/banco.
+        notificacaoTentadaRef.current = null;
+        console.error("Erro ao gerar notificação:", error);
+      }
+    },
+    [user]
+  );
+
+  useFocusEffect(
+    useCallback(() => {
+    let ativo = true;
+    let intervalo: ReturnType<typeof setInterval> | null = null;
+
     async function carregarSenha() {
       if (!user) {
+        senhaRef.current = null;
+        setSenhaAtiva(null);
         setCarregando(false);
         return;
       }
 
+      setCarregando(true);
+      setErro("");
+      setStatusFinal(null);
+
       try {
         const senha = await getSenhaAtiva(user.id);
+
+        if (!ativo) {
+          return;
+        }
+
+        senhaRef.current = senha;
         setSenhaAtiva(senha);
 
-        // Gatilho real de notificação: se a senha estiver a 1-2 posições
-        // de ser chamada, garante que existe um aviso pra ela (idempotente
-        // no banco, então é seguro chamar toda vez que a tela carrega).
         if (senha) {
-          notificarSeProximo(user.id, senha).catch((error) => {
-            console.error("Erro ao gerar notificação:", error);
-          });
+          setSaiuDaFila(false);
+          void tentarNotificar(senha);
         }
       } catch (error) {
         console.error("Erro ao carregar senha ativa:", error);
-        setErro("Não foi possível carregar sua senha agora.");
+
+        if (ativo) {
+          setErro("Não foi possível carregar sua senha agora.");
+        }
       } finally {
-        setCarregando(false);
+        if (ativo) {
+          setCarregando(false);
+        }
       }
 
       try {
-        setNaoLidas(await contarNaoLidas(user.id));
+        const total = await contarNaoLidas(user.id);
+
+        if (ativo) {
+          setNaoLidas(total);
+        }
       } catch (error) {
         console.error("Erro ao contar notificações:", error);
       }
     }
 
-    carregarSenha();
-  }, [user]);
+    async function atualizarFila() {
+      const senhaAtual = senhaRef.current;
+
+      if (
+        !ativo ||
+        !user ||
+        !senhaAtual ||
+        atualizandoRef.current
+      ) {
+        return;
+      }
+
+      atualizandoRef.current = true;
+
+      try {
+        const resultado = await atualizarSenhaAtiva(senhaAtual);
+
+        if (!ativo) {
+          return;
+        }
+
+        senhaRef.current = resultado.senha;
+        setSenhaAtiva(resultado.senha);
+
+        if (resultado.statusFinal) {
+          setStatusFinal(resultado.statusFinal);
+          setSaiuDaFila(false);
+          setConfirmandoSaida(false);
+          setErroSair("");
+          return;
+        }
+
+        if (resultado.senha) {
+          void tentarNotificar(resultado.senha);
+        }
+      } catch (error) {
+        // Uma falha temporária no polling não apaga os últimos dados
+        // válidos mostrados ao usuário.
+        console.error("Erro ao atualizar posição da fila:", error);
+      } finally {
+        atualizandoRef.current = false;
+      }
+    }
+
+    void carregarSenha();
+
+    intervalo = setInterval(() => {
+      void atualizarFila();
+    }, POLLING_INTERVAL_MS);
+
+    return () => {
+      ativo = false;
+
+      if (intervalo) {
+        clearInterval(intervalo);
+      }
+    };
+  }, [user, tentarNotificar])
+  );
 
   async function sairDaFila() {
     if (!senhaAtiva || saindo) {
@@ -96,7 +209,9 @@ export default function MinhaSenha() {
 
     try {
       await cancelarSenha(senhaAtiva.id);
+      senhaRef.current = null;
       setSenhaAtiva(null);
+      setStatusFinal(null);
       setSaiuDaFila(true);
       setConfirmandoSaida(false);
     } catch (error) {
@@ -106,6 +221,30 @@ export default function MinhaSenha() {
       setSaindo(false);
     }
   }
+
+  const senhaChamada = senhaAtiva?.status === "chamado";
+
+  const tituloSemSenha =
+    statusFinal === "atendido"
+      ? "Atendimento finalizado"
+      : statusFinal === "cancelado"
+        ? "Senha cancelada"
+        : statusFinal === "nao_compareceu"
+          ? "Atendimento encerrado"
+          : saiuDaFila
+            ? "Você saiu da fila"
+            : "Nenhuma senha retirada";
+
+  const descricaoSemSenha =
+    statusFinal === "atendido"
+      ? "Seu atendimento foi concluído e já aparece no Histórico."
+      : statusFinal === "cancelado"
+        ? "Sua senha foi cancelada e já aparece no Histórico."
+        : statusFinal === "nao_compareceu"
+          ? "Sua senha foi encerrada por não comparecimento e já aparece no Histórico."
+          : saiuDaFila
+            ? "Sua senha foi cancelada e já aparece no seu Histórico."
+            : "Escolha um serviço para retirar sua senha digital e acompanhar a fila em tempo real.";
 
   return (
     <SafeAreaView style={styles.screen}>
@@ -147,15 +286,30 @@ export default function MinhaSenha() {
                 {senhaAtiva.local ? ` • ${senhaAtiva.local}` : ""}
               </Text>
 
-              <View style={styles.positionCircle}>
-                <Text style={styles.positionNumber}>
-                  {senhaAtiva.posicao}º
+              <View
+                style={[
+                  styles.positionCircle,
+                  senhaChamada && styles.positionCircleCalled,
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.positionNumber,
+                    senhaChamada && styles.positionNumberCalled,
+                  ]}
+                >
+                  {senhaChamada ? "CHAMADO" : `${senhaAtiva.posicao}º`}
                 </Text>
-                <Text style={styles.positionLabel}>na fila</Text>
+
+                <Text style={styles.positionLabel}>
+                  {senhaChamada ? "dirija-se ao atendimento" : "na fila"}
+                </Text>
               </View>
 
               <Text style={styles.estimate}>
-                Tempo estimado: ~{senhaAtiva.tempoEstimadoMinutos} minutos
+                {senhaChamada
+                  ? "Sua senha foi chamada. Dirija-se ao atendimento agora."
+                  : `Tempo estimado: ~${senhaAtiva.tempoEstimadoMinutos} minutos`}
               </Text>
             </View>
 
@@ -219,14 +373,9 @@ export default function MinhaSenha() {
               />
             </View>
 
-            <Text style={styles.emptyTitle}>
-              {saiuDaFila ? "Você saiu da fila" : "Nenhuma senha retirada"}
-            </Text>
+            <Text style={styles.emptyTitle}>{tituloSemSenha}</Text>
             <Text style={styles.emptyDescription}>
-              {erro ||
-                (saiuDaFila
-                  ? "Sua senha foi cancelada e já aparece no seu Histórico."
-                  : "Escolha um serviço para retirar sua senha digital e acompanhar a fila em tempo real.")}
+              {erro || descricaoSemSenha}
             </Text>
 
             <Pressable
@@ -366,6 +515,17 @@ const styles = StyleSheet.create({
     color: COLORS.blue,
     fontSize: 34,
     fontWeight: "800",
+  },
+
+  positionCircleCalled: {
+    backgroundColor: "#EAF8EF",
+    borderColor: "#B9E3C9",
+  },
+
+  positionNumberCalled: {
+    color: "#129B56",
+    fontSize: 21,
+    letterSpacing: 1,
   },
 
   positionLabel: {

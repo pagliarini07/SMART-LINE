@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
-import { router, useLocalSearchParams } from "expo-router";
-import { useCallback, useEffect, useState } from "react";
+import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Pressable,
@@ -13,6 +13,7 @@ import {
 } from "react-native";
 import BottomTabBar from "../../components/BottomTabBar";
 import {
+  atualizarContagensServicos,
   DadosServicosLocal,
   listarServicosPorLocal,
 } from "../../services/servicos";
@@ -31,12 +32,17 @@ const COLORS = {
   yellowSoft: "#FFF3D6",
 };
 
+const POLLING_CONTAGEM_MS = 15_000;
+
 export default function Inicio() {
   const { localId } = useLocalSearchParams<{ localId?: string }>();
 
   const [dados, setDados] = useState<DadosServicosLocal | null>(null);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState("");
+
+  const dadosRef = useRef<DadosServicosLocal | null>(null);
+  const atualizandoContagemRef = useRef(false);
 
   const carregarServicos = useCallback(async () => {
     if (!localId) {
@@ -50,6 +56,7 @@ export default function Inicio() {
       setErro("");
 
       const resultado = await listarServicosPorLocal(localId);
+      dadosRef.current = resultado;
       setDados(resultado);
     } catch (error) {
       console.error("Erro ao carregar serviços:", error);
@@ -62,6 +69,54 @@ export default function Inicio() {
   useEffect(() => {
     carregarServicos();
   }, [carregarServicos]);
+
+  useFocusEffect(
+    useCallback(() => {
+      let ativo = true;
+
+      async function atualizarContagens() {
+        const atuais = dadosRef.current;
+
+        if (
+          !ativo ||
+          !atuais ||
+          atualizandoContagemRef.current
+        ) {
+          return;
+        }
+
+        atualizandoContagemRef.current = true;
+
+        try {
+          const atualizados = await atualizarContagensServicos(atuais);
+
+          if (!ativo) {
+            return;
+          }
+
+          dadosRef.current = atualizados;
+          setDados(atualizados);
+        } catch (error) {
+          // Falha temporária não apaga os últimos valores válidos.
+          console.error("Erro ao atualizar contagem das filas:", error);
+        } finally {
+          atualizandoContagemRef.current = false;
+        }
+      }
+
+      // Atualiza imediatamente ao voltar para a tela.
+      void atualizarContagens();
+
+      const intervalo = setInterval(() => {
+        void atualizarContagens();
+      }, POLLING_CONTAGEM_MS);
+
+      return () => {
+        ativo = false;
+        clearInterval(intervalo);
+      };
+    }, [])
+  );
 
   const unidade = dados?.unidade;
   const servicos = dados?.servicos ?? [];
