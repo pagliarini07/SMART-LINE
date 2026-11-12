@@ -45,7 +45,8 @@ async function montarCatalogo(
         titulo,
         descricao,
         setor,
-        tempo_medio_minutos
+        tempo_medio_minutos,
+        documentos_sugeridos
       `
     )
     .eq("ativo", true)
@@ -171,8 +172,10 @@ async function montarCatalogo(
         ) ?? 0,
 
       tempo_medio_min:
-        servico
-          .tempo_medio_minutos,
+        servico.tempo_medio_minutos,
+
+      documentos_sugeridos:
+        servico.documentos_sugeridos ?? [],
     })
   );
 }
@@ -210,8 +213,9 @@ retorne servico_id como null.
 abaixo de 0.6 e escreva UMA pergunta curta em
 pergunta_esclarecimento.
 
-4. Em documentos, liste no máximo 5 documentos
-comuns para o atendimento.
+4. O campo documentos_sugeridos de cada serviço é a
+referência do catálogo. Não invente documentos; use
+somente os documentos cadastrados para o serviço escolhido.
 
 5. Não invente taxas, prazos ou endereços.
 
@@ -493,9 +497,16 @@ export default {
             idsValidos
           );
 
-        return Response.json(
-          resultado
+        // Documentos vêm do catálogo persistido, nunca apenas da geração
+        // livre do modelo. Isso mantém a recomendação alinhada ao cadastro.
+        const servicoEscolhido = catalogo.find(
+          (servico) => servico.id === resultado.servico_id
         );
+
+        return Response.json({
+          ...resultado,
+          documentos: servicoEscolhido?.documentos_sugeridos ?? [],
+        });
       } catch (error) {
         if (
           error instanceof

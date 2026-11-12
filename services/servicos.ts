@@ -12,6 +12,7 @@ export type Servico = {
   descricao: string;
   setor: string;
   pessoasAguardando: number;
+  tempoMedioMinutos: number;
 };
 
 export type UnidadeServicos = {
@@ -70,7 +71,7 @@ export async function listarServicosPorLocal(
   const { data: servicos, error: servicosError } = await supabase
     .from("servicos")
     .select(
-      "id, titulo, descricao, setor, icone, cor_icone, cor_fundo"
+      "id, titulo, descricao, setor, icone, cor_icone, cor_fundo, tempo_medio_minutos"
     )
     .eq("local_id", localId)
     .eq("ativo", true)
@@ -114,6 +115,7 @@ export async function listarServicosPorLocal(
     descricao: servico.descricao ?? "",
     setor: servico.setor ?? "Não informado",
     pessoasAguardando: contagem.get(servico.id) ?? 0,
+    tempoMedioMinutos: servico.tempo_medio_minutos ?? 15,
   }));
 
   return {
