@@ -1,9 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
+import { contarEsperaPorServico } from "./filas";
 import { supabase } from "./supabase";
-
-// Senhas que já saíram da fila — qualquer outro status conta como "ainda
-// aguardando" (mesmo critério usado em lib/senhas.ts).
-const STATUS_FINALIZADOS = ["atendido", "cancelado", "nao_compareceu"];
 
 export type Categoria = {
   id: string;
@@ -112,27 +109,7 @@ export async function listarLocais(): Promise<Local[]> {
   }
 
   const todosServicoIds = (servicos ?? []).map((s) => s.id);
-
-  const contagemPorServico = new Map<string, number>();
-
-  if (todosServicoIds.length > 0) {
-    const { data: senhas, error: senhasError } = await supabase
-      .from("senhas")
-      .select("servico_id")
-      .in("servico_id", todosServicoIds)
-      .not("status", "in", `(${STATUS_FINALIZADOS.join(",")})`);
-
-    if (senhasError) {
-      throw senhasError;
-    }
-
-    for (const senha of senhas ?? []) {
-      contagemPorServico.set(
-        senha.servico_id,
-        (contagemPorServico.get(senha.servico_id) ?? 0) + 1
-      );
-    }
-  }
+  const contagemPorServico = await contarEsperaPorServico(todosServicoIds);
 
   return locaisAtivos.map((local) => {
     const servicoIds = servicoIdsPorLocal.get(local.id) ?? [];

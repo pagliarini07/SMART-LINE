@@ -1,7 +1,6 @@
+import { contarEsperaPorServico } from "./filas";
 import { supabase } from "./supabase";
 import type { TriagemResposta } from "./triagem";
-
-const STATUS_FINALIZADOS = ["atendido", "cancelado", "nao_compareceu"];
 
 // A partir desse valor de confiança, o app afirma "é esse o serviço".
 // Abaixo disso, mostra esclarecimento/alternativas em vez de afirmar.
@@ -96,32 +95,6 @@ function documentosPadrao(setor: string | null): string[] {
   return ["Documento de identificação com foto", "Comprovante de residência"];
 }
 
-async function contarAguardandoPorServico(
-  servicoIds: string[]
-): Promise<Map<string, number>> {
-  const contagem = new Map<string, number>();
-
-  if (servicoIds.length === 0) {
-    return contagem;
-  }
-
-  const { data: senhas, error } = await supabase
-    .from("senhas")
-    .select("servico_id")
-    .in("servico_id", servicoIds)
-    .not("status", "in", `(${STATUS_FINALIZADOS.join(",")})`);
-
-  if (error) {
-    throw error;
-  }
-
-  for (const senha of senhas ?? []) {
-    contagem.set(senha.servico_id, (contagem.get(senha.servico_id) ?? 0) + 1);
-  }
-
-  return contagem;
-}
-
 /**
  * Recomendador por similaridade de texto. **Não é uma chamada a um LLM** —
  * o projeto ainda não tem uma chave de IA configurada. Compara as
@@ -203,7 +176,7 @@ export async function recomendarServico(
   }
 
   const idsParaContagem = pontuados.slice(0, 4).map((item) => item.servico.id);
-  const contagem = await contarAguardandoPorServico(idsParaContagem);
+  const contagem = await contarEsperaPorServico(idsParaContagem);
 
   const alternativas: AlternativaRecomendacao[] = pontuados
     .slice(1, 4)
@@ -285,7 +258,7 @@ export async function montarRecomendacaoDaTriagem(
     (locaisData ?? []).map((local) => [local.id, local.nome as string])
   );
 
-  const contagem = await contarAguardandoPorServico([principal.id]);
+  const contagem = await contarEsperaPorServico([principal.id]);
 
   const alternativas: AlternativaRecomendacao[] = resposta.alternativas
     .map((id) => servicosPorId.get(id))
