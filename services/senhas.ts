@@ -18,8 +18,14 @@ export type SenhaAtiva = {
 type SenhaComServico = {
   id: string;
   servico_id: string;
+  codigo: string;
   status: string;
   retirada_em: string;
+};
+
+type PosicaoSenha = {
+  posicao: number;
+  tempo_estimado_minutos: number;
 };
 
 /**
@@ -31,7 +37,7 @@ export async function getSenhaAtiva(
 ): Promise<SenhaAtiva | null> {
   const { data: senha, error } = await supabase
     .from("senhas")
-    .select("id, servico_id, status, retirada_em")
+    .select("id, servico_id, codigo, status, retirada_em")
     .eq("usuario_id", userId)
     .not("status", "in", `(${STATUS_FINALIZADOS.join(",")})`)
     .order("retirada_em", { ascending: false })
@@ -51,7 +57,7 @@ export async function getSenhaAtiva(
   // nota no PR sobre verificar/corrigir constraints (issue #40/#41).
   const { data: servico, error: servicoError } = await supabase
     .from("servicos")
-    .select("titulo, prefixo_senha, tempo_medio_minutos, local_id")
+    .select("titulo, tempo_medio_minutos, local_id")
     .eq("id", senha.servico_id)
     .maybeSingle();
 
@@ -75,31 +81,34 @@ export async function getSenhaAtiva(
     nomeLocal = local?.nome ?? "";
   }
 
-  // Posição na fila: quantas senhas do mesmo serviço, ainda não
-  // finalizadas, foram retiradas antes (ou no mesmo instante) da nossa.
-  const { count, error: countError } = await supabase
-    .from("senhas")
-    .select("id", { count: "exact", head: true })
-    .eq("servico_id", senha.servico_id)
-    .not("status", "in", `(${STATUS_FINALIZADOS.join(",")})`)
-    .lte("retirada_em", senha.retirada_em);
+  // Posição na fila e tempo estimado vêm da RPC posicao_senha (issue
+  // #93): contar direto na tabela senhas só enxergaria a própria senha
+  // do usuário, por causa do RLS -- a RPC agrega no banco (SECURITY
+  // DEFINER) e devolve só os dois números, sem expor senhas de
+  // ninguém.
+  const { data: posicaoData, error: posicaoError } = await supabase
+    .rpc("posicao_senha", { p_senha_id: senha.id })
+    .maybeSingle<PosicaoSenha>();
 
-  if (countError) {
-    throw countError;
+  if (posicaoError) {
+    throw posicaoError;
   }
 
-  const posicao = count && count > 0 ? count : 1;
+  const posicao = posicaoData?.posicao ?? 1;
   const tempoMedio = servico?.tempo_medio_minutos ?? 5;
-  const prefixo = servico?.prefixo_senha ?? "";
 
   return {
     id: senha.id,
     servicoId: senha.servico_id,
-    codigo: `${prefixo}${String(posicao).padStart(3, "0")}`,
+    // O código vem direto da coluna, nunca reconstruído a partir da
+    // posição (issue #92) -- a posição pode diminuir (gente sendo
+    // atendida na frente), mas o código da própria senha nunca muda.
+    codigo: senha.codigo,
     servico: servico?.titulo ?? "Serviço",
     local: nomeLocal,
     posicao,
-    tempoEstimadoMinutos: posicao * tempoMedio,
+    tempoEstimadoMinutos:
+      posicaoData?.tempo_estimado_minutos ?? posicao * tempoMedio,
   };
 }
 

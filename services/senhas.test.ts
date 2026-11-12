@@ -61,13 +61,14 @@ describe("getSenhaAtiva", () => {
     expect(mockFrom).toHaveBeenCalledWith("senhas");
   });
 
-  it("monta codigo, posicao e tempo estimado a partir do servico/local reais", async () => {
+  it("monta codigo (direto da coluna), posicao e tempo estimado via RPC", async () => {
     mockFrom
       .mockReturnValueOnce(
         queryBuilder({
           data: {
             id: "senha-1",
             servico_id: "servico-1",
+            codigo: "A003",
             status: "aguardando",
             retirada_em: "2026-01-01T10:00:00.000Z",
           },
@@ -78,7 +79,6 @@ describe("getSenhaAtiva", () => {
         queryBuilder({
           data: {
             titulo: "Emissão de documentos",
-            prefixo_senha: "A",
             tempo_medio_minutos: 5,
             local_id: "local-1",
           },
@@ -87,11 +87,20 @@ describe("getSenhaAtiva", () => {
       )
       .mockReturnValueOnce(
         queryBuilder({ data: { nome: "Resolve Palmas" }, error: null })
-      )
-      .mockReturnValueOnce(queryBuilder({ count: 3, error: null }));
+      );
+
+    mockRpc.mockReturnValueOnce(
+      queryBuilder({
+        data: { posicao: 3, tempo_estimado_minutos: 15 },
+        error: null,
+      })
+    );
 
     const resultado = await getSenhaAtiva("usuario-1");
 
+    expect(mockRpc).toHaveBeenCalledWith("posicao_senha", {
+      p_senha_id: "senha-1",
+    });
     expect(resultado).toEqual({
       id: "senha-1",
       servicoId: "servico-1",
@@ -101,6 +110,49 @@ describe("getSenhaAtiva", () => {
       posicao: 3,
       tempoEstimadoMinutos: 15,
     });
+  });
+
+  it("o código nunca é reconstruído a partir da posição -- mesmo se a posição mudar, o código da senha continua o que veio do banco", async () => {
+    mockFrom
+      .mockReturnValueOnce(
+        queryBuilder({
+          data: {
+            id: "senha-1",
+            servico_id: "servico-1",
+            codigo: "A007",
+            status: "aguardando",
+            retirada_em: "2026-01-01T10:00:00.000Z",
+          },
+          error: null,
+        })
+      )
+      .mockReturnValueOnce(
+        queryBuilder({
+          data: {
+            titulo: "Emissão de documentos",
+            tempo_medio_minutos: 5,
+            local_id: "local-1",
+          },
+          error: null,
+        })
+      )
+      .mockReturnValueOnce(
+        queryBuilder({ data: { nome: "Resolve Palmas" }, error: null })
+      );
+
+    // Posição caiu de um valor maior pra 1 (gente na frente foi
+    // atendida) -- o código continua sendo A007, não vira "A001".
+    mockRpc.mockReturnValueOnce(
+      queryBuilder({
+        data: { posicao: 1, tempo_estimado_minutos: 5 },
+        error: null,
+      })
+    );
+
+    const resultado = await getSenhaAtiva("usuario-1");
+
+    expect(resultado?.codigo).toBe("A007");
+    expect(resultado?.posicao).toBe(1);
   });
 
   it("propaga o erro quando a consulta principal falha", async () => {

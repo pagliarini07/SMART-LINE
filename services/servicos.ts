@@ -1,7 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
+import { contarEsperaPorServico } from "./filas";
 import { supabase } from "./supabase";
-
-const STATUS_FINALIZADOS = ["atendido", "cancelado", "nao_compareceu"];
 
 export type Servico = {
   id: string;
@@ -82,26 +81,7 @@ export async function listarServicosPorLocal(
 
   const servicosAtivos = servicos ?? [];
   const ids = servicosAtivos.map((servico) => servico.id);
-  const contagem = new Map<string, number>();
-
-  if (ids.length > 0) {
-    const { data: senhas, error: senhasError } = await supabase
-      .from("senhas")
-      .select("servico_id")
-      .in("servico_id", ids)
-      .not("status", "in", `(${STATUS_FINALIZADOS.join(",")})`);
-
-    if (senhasError) {
-      throw senhasError;
-    }
-
-    for (const senha of senhas ?? []) {
-      contagem.set(
-        senha.servico_id,
-        (contagem.get(senha.servico_id) ?? 0) + 1
-      );
-    }
-  }
+  const contagem = await contarEsperaPorServico(ids);
 
   const lista: Servico[] = servicosAtivos.map((servico) => ({
     id: servico.id,
