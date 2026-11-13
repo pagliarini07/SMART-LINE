@@ -27,7 +27,13 @@ export type TipoErroTriagem =
   | "timeout"
   | "nao_autenticado"
   | "erro_ia"
+  | "ia_indisponivel"
   | "resposta_invalida";
+
+// Usada se a função não mandar pergunta junto de uma resposta sem serviço
+// (a versão atual sempre manda; isso protege contra versões antigas).
+export const PERGUNTA_PADRAO =
+  "Pode descrever com mais detalhes o que você precisa?";
 
 export class ErroTriagem extends Error {
   tipo: TipoErroTriagem;
@@ -79,10 +85,11 @@ export function validarRespostaTriagem(valor: unknown): TriagemResposta {
     throw new ErroTriagem("resposta_invalida", "Resposta da triagem inválida.");
   }
 
-  // Sem serviço e sem pergunta, não há nada útil pra mostrar.
-  if (dados.servico_id === null && !dados.pergunta_esclarecimento) {
-    throw new ErroTriagem("resposta_invalida", "Resposta da triagem vazia.");
-  }
+  // Sem serviço e sem pergunta: em vez de erro, pede mais detalhes.
+  const pergunta =
+    dados.servico_id === null && !dados.pergunta_esclarecimento
+      ? PERGUNTA_PADRAO
+      : (dados.pergunta_esclarecimento as string | null);
 
   return {
     servico_id: dados.servico_id as string | null,
@@ -90,7 +97,7 @@ export function validarRespostaTriagem(valor: unknown): TriagemResposta {
     motivo: dados.motivo as string,
     documentos: dados.documentos as string[],
     alternativas: dados.alternativas as string[],
-    pergunta_esclarecimento: dados.pergunta_esclarecimento as string | null,
+    pergunta_esclarecimento: pergunta,
   };
 }
 
@@ -138,6 +145,16 @@ export async function triarPedido(pedido: string): Promise<TriagemResposta> {
       if (resposta?.status === 401) {
         throw new ErroTriagem("nao_autenticado", "Sessão expirada.");
       }
+
+      // 503: cota do Gemini esgotada ou Gemini fora do ar (issue #96).
+      if (resposta?.status === 503) {
+        throw new ErroTriagem("ia_indisponivel", "IA indisponível.");
+      }
+
+      // 504: a função desistiu de esperar o Gemini.
+      if (resposta?.status === 504) {
+        throw new ErroTriagem("timeout", "A IA demorou demais.");
+      }
     }
 
     // FunctionsHttpError (erro dentro da função/IA) ou FunctionsRelayError.
@@ -162,6 +179,8 @@ export function mensagemErroTriagem(error: unknown): string {
       return "A análise demorou mais que o esperado. Tente de novo em instantes.";
     case "nao_autenticado":
       return "Sua sessão expirou. Entre novamente para usar o assistente.";
+    case "ia_indisponivel":
+      return "O assistente está indisponível agora. Tente de novo em alguns minutos ou escolha na lista abaixo.";
     case "resposta_invalida":
       return "Não conseguimos entender a resposta do assistente. Tente descrever de outro jeito ou escolha na lista abaixo.";
     default:

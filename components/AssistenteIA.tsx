@@ -12,6 +12,7 @@ import {
 import {
   LIMITE_PEDIDO,
   mensagemErroTriagem,
+  PERGUNTA_PADRAO,
   triarPedido,
 } from "../services/triagem";
 
@@ -63,7 +64,7 @@ export default function AssistenteIA() {
       } else {
         // A IA não teve certeza: mostra a pergunta dela e deixa o pedido no
         // campo pro usuário complementar.
-        setPergunta(resposta.pergunta_esclarecimento ?? "");
+        setPergunta(resposta.pergunta_esclarecimento ?? PERGUNTA_PADRAO);
       }
     } catch (error) {
       console.error("Erro na triagem com IA:", error);

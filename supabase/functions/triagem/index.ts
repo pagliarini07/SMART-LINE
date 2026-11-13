@@ -1,7 +1,12 @@
 import { withSupabase } from "npm:@supabase/server@1.9.2";
 import {
   CatalogoServico,
+  ErroProvedorIA,
   TRIAGEM_JSON_SCHEMA,
+  aplicarPoliticaConfianca,
+  extrairJsonDaIA,
+  extrairTextoGemini,
+  respostaDeFalhaDaIA,
   sanitizarPedido,
   validarTriagemResposta,
 } from "./logic.ts";
@@ -209,9 +214,18 @@ Nunca invente um serviço.
 2. Se nenhum serviço da lista resolver o pedido,
 retorne servico_id como null.
 
-3. Se o pedido estiver ambíguo, use confiança
-abaixo de 0.6 e escreva UMA pergunta curta em
-pergunta_esclarecimento.
+3. Não chute. Se o pedido estiver ambíguo ou vago
+(ex.: "preciso resolver um documento"), use confiança
+abaixo de 0.35 e escreva UMA pergunta curta em
+pergunta_esclarecimento (ex.: "Qual documento você
+precisa emitir ou regularizar?").
+
+3.1. Se o pedido combinar com mais de um serviço e você
+não tiver certeza de qual, use confiança entre 0.35 e 0.6,
+escolha o mais provável e coloque os outros em alternativas.
+
+3.2. Só use confiança 0.6 ou mais quando o pedido indicar
+claramente um único serviço da lista.
 
 4. O campo documentos_sugeridos de cada serviço é a
 referência do catálogo. Não invente documentos; use
@@ -320,43 +334,17 @@ async function consultarGemini(
         detalheErro.slice(0, 1000)
       );
 
-      throw new Error(
-        "Erro do provedor de IA."
+      throw new ErroProvedorIA(
+        resposta.status
       );
     }
 
     const payload =
       await resposta.json();
 
-    const partes =
-      payload?.candidates?.[0]
-        ?.content?.parts;
-
-    const blocoTexto =
-      Array.isArray(partes)
-        ? partes.find(
-            (parte: any) =>
-              typeof parte?.text ===
-                "string" &&
-              parte?.thought !== true
-          )
-        : null;
-
-    if (!blocoTexto?.text) {
-      throw new Error(
-        "A IA não retornou texto."
-      );
-    }
-
-    try {
-      return JSON.parse(
-        blocoTexto.text
-      );
-    } catch {
-      throw new Error(
-        "A IA retornou JSON inválido."
-      );
-    }
+    return extrairJsonDaIA(
+      extrairTextoGemini(payload)
+    );
   } finally {
     clearTimeout(timeout);
   }
@@ -459,8 +447,8 @@ export default {
 
         /*
          * Antes de enviar o pedido
-         * à Anthropic removemos
-         * CPF, telefone e e-mail.
+         * ao Gemini removemos
+         * CPF, telefone, e-mail e nome.
          */
         const pedidoSeguro =
           sanitizarPedido(
@@ -491,10 +479,14 @@ export default {
             )
           );
 
+        // Serviço inventado vira "sem serviço"; confiança baixa vira
+        // pergunta de esclarecimento (issue #96).
         const resultado =
-          validarTriagemResposta(
-            respostaIA,
-            idsValidos
+          aplicarPoliticaConfianca(
+            validarTriagemResposta(
+              respostaIA,
+              idsValidos
+            )
           );
 
         // Documentos vêm do catálogo persistido, nunca apenas da geração
@@ -508,27 +500,19 @@ export default {
           documentos: servicoEscolhido?.documentos_sugeridos ?? [],
         });
       } catch (error) {
-        if (
-          error instanceof
-            DOMException &&
-          error.name ===
-            "AbortError"
-        ) {
-          return respostaErro(
-            504,
-            "A IA demorou demais para responder."
-          );
-        }
-
         console.error(
           error instanceof Error
             ? error.message
             : "Erro interno na triagem."
         );
 
+        // 503 = IA indisponível/cota, 504 = demorou, 502 = resto.
+        const falha =
+          respostaDeFalhaDaIA(error);
+
         return respostaErro(
-          502,
-          "Não foi possível realizar a triagem agora."
+          falha.status,
+          falha.mensagem
         );
       }
     }

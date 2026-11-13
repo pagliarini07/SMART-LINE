@@ -11,6 +11,7 @@ import {
   ErroTriagem,
   LIMITE_PEDIDO,
   mensagemErroTriagem,
+  PERGUNTA_PADRAO,
   triarPedido,
   validarRespostaTriagem,
 } from "./triagem";
@@ -98,6 +99,24 @@ describe("triarPedido", () => {
     expect(await tipoDoErro(triarPedido("RG"))).toBe("erro_ia");
   });
 
+  it("identifica IA indisponível (503: cota esgotada ou Gemini fora)", async () => {
+    mockInvoke.mockResolvedValueOnce({
+      data: null,
+      error: new FunctionsHttpError({ status: 503 }),
+    });
+
+    expect(await tipoDoErro(triarPedido("RG"))).toBe("ia_indisponivel");
+  });
+
+  it("identifica demora da IA no servidor (504)", async () => {
+    mockInvoke.mockResolvedValueOnce({
+      data: null,
+      error: new FunctionsHttpError({ status: 504 }),
+    });
+
+    expect(await tipoDoErro(triarPedido("RG"))).toBe("timeout");
+  });
+
   it("identifica sessão expirada (401)", async () => {
     mockInvoke.mockResolvedValueOnce({
       data: null,
@@ -130,14 +149,15 @@ describe("validarRespostaTriagem", () => {
     expect(resposta.servico_id).toBeNull();
   });
 
-  it("rejeita resposta sem serviço e sem pergunta", () => {
-    expect(() =>
-      validarRespostaTriagem({
-        ...respostaValida,
-        servico_id: null,
-        pergunta_esclarecimento: null,
-      })
-    ).toThrow(ErroTriagem);
+  it("sem serviço e sem pergunta: pede mais detalhes em vez de dar erro", () => {
+    const resposta = validarRespostaTriagem({
+      ...respostaValida,
+      servico_id: null,
+      pergunta_esclarecimento: null,
+    });
+
+    expect(resposta.servico_id).toBeNull();
+    expect(resposta.pergunta_esclarecimento).toBe(PERGUNTA_PADRAO);
   });
 
   it("rejeita confiança fora de 0 a 1", () => {
@@ -153,6 +173,7 @@ describe("mensagemErroTriagem", () => {
       "sem_internet",
       "timeout",
       "erro_ia",
+      "ia_indisponivel",
       "resposta_invalida",
     ] as const;
 
