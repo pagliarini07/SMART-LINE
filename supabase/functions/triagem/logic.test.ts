@@ -99,6 +99,39 @@ describe("validarTriagemResposta", () => {
     expect(repetida.alternativas).toEqual(["servico-2"]);
   });
 
+  it("mantém só 2 alternativas quando a IA manda mais (serviço em vários locais)", () => {
+    const resultado = validarTriagemResposta(
+      {
+        ...respostaValida,
+        alternativas: ["servico-2", "inventado", "servico-3", "servico-2"],
+      },
+      new Set(["servico-1", "servico-2", "servico-3", "servico-4"])
+    );
+
+    expect(resultado.alternativas).toEqual(["servico-2", "servico-3"]);
+  });
+
+  it("corta motivo e pergunta longos em vez de recusar a resposta", () => {
+    const resultado = validarTriagemResposta(
+      {
+        ...respostaValida,
+        motivo: "a".repeat(500),
+        pergunta_esclarecimento: "b".repeat(400),
+      },
+      ids
+    );
+
+    expect(resultado.motivo.length).toBeLessThanOrEqual(300);
+    expect(resultado.pergunta_esclarecimento?.length).toBeLessThanOrEqual(220);
+  });
+
+  it("pergunta vazia conta como sem pergunta", () => {
+    expect(
+      validarTriagemResposta({ ...respostaValida, pergunta_esclarecimento: "  " }, ids)
+        .pergunta_esclarecimento
+    ).toBeNull();
+  });
+
   it("corta documentos em excesso em vez de recusar a resposta", () => {
     const resultado = validarTriagemResposta(
       { ...respostaValida, documentos: ["a", "b", "c", "d", "e", "f", "g"] },

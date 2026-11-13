@@ -227,6 +227,17 @@ escolha o mais provável e coloque os outros em alternativas.
 3.2. Só use confiança 0.6 ou mais quando o pedido indicar
 claramente um único serviço da lista.
 
+3.3. Em alternativas coloque no máximo 2 ids, diferentes
+do servico_id. Se o mesmo serviço existir em vários
+locais, escolha um local em servico_id e use as
+alternativas para outros locais ou serviços parecidos.
+
+3.4. Leia título, descricao, setor e o nome do local.
+Um serviço de "Atendimento geral" atende os serviços
+típicos daquele órgão (ex.: cartório faz reconhecimento
+de firma, autenticação e certidões; DETRAN trata de CNH
+e veículos).
+
 4. O campo documentos_sugeridos de cada serviço é a
 referência do catálogo. Não invente documentos; use
 somente os documentos cadastrados para o serviço escolhido.
