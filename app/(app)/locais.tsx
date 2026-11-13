@@ -1,8 +1,12 @@
 import { Ionicons } from "@expo/vector-icons";
 import { router, Stack } from "expo-router";
+import * as Location from "expo-location";
 import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
+  Linking,
+  Platform,
   Pressable,
   SafeAreaView,
   ScrollView,
@@ -18,6 +22,10 @@ import { useAuth } from "../../hooks/useAuth";
 import { Categoria, listarCategorias, listarLocais, Local } from "../../services/locais";
 import { contarNaoLidas } from "../../services/notificacoes";
 import { getProfile } from "../../services/profiles";
+import {
+  calcularDistanciasPorRota,
+  formatarDistancia,
+} from "../../utils/localizacao";
 
 const COLORS = {
   blue: "#0757D8",
@@ -50,6 +58,16 @@ export default function Locais() {
   const [locais, setLocais] = useState<Local[]>([]);
   const [categorias, setCategorias] = useState<Categoria[]>([]);
   const [naoLidas, setNaoLidas] = useState(0);
+  const [coordenadasUsuario, setCoordenadasUsuario] = useState<{
+    latitude: number;
+    longitude: number;
+  } | null>(null);
+  const [carregandoLocalizacao, setCarregandoLocalizacao] = useState(false);
+  const [ordenarPorProximidade, setOrdenarPorProximidade] = useState(false);
+  const [distanciasPorRota, setDistanciasPorRota] =
+    useState<Record<string, number | null>>({});
+  const [carregandoRotas, setCarregandoRotas] = useState(false);
+  const [erroRotas, setErroRotas] = useState("");
 
   useEffect(() => {
     async function carregarNomeUsuario() {
@@ -128,6 +146,102 @@ export default function Locais() {
     carregarDados();
   }, [carregarDados]);
 
+  const atualizarDistanciasPorRota = async (origem: {
+    latitude: number;
+    longitude: number;
+  }) => {
+    setCarregandoRotas(true);
+    setDistanciasPorRota({});
+    setErroRotas("");
+
+    try {
+      const resultado = await calcularDistanciasPorRota(
+        origem,
+        locais.map((local) => ({
+          id: local.id,
+          latitude: local.latitude,
+          longitude: local.longitude,
+        }))
+      );
+
+      setDistanciasPorRota(resultado);
+    } catch (error) {
+      console.error("Erro ao calcular rotas:", error);
+      setDistanciasPorRota({});
+      setErroRotas(
+        "Não foi possível calcular as distâncias pelas ruas. Tente novamente."
+      );
+    } finally {
+      setCarregandoRotas(false);
+    }
+  };
+
+  const obterLocalizacao = async () => {
+    setCarregandoLocalizacao(true);
+
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+
+      if (status !== "granted") {
+        setCoordenadasUsuario(null);
+        setDistanciasPorRota({});
+        setErroRotas("");
+        setOrdenarPorProximidade(false);
+
+        Alert.alert(
+          "Permissão necessária",
+          "Autorize o acesso à localização para calcular a distância até os locais."
+        );
+        return;
+      }
+
+      const posicao = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.Balanced,
+      });
+
+      const coordenadas = {
+        latitude: posicao.coords.latitude,
+        longitude: posicao.coords.longitude,
+      };
+
+      setCoordenadasUsuario(coordenadas);
+      await atualizarDistanciasPorRota(coordenadas);
+    } catch (error) {
+      setCoordenadasUsuario(null);
+      setDistanciasPorRota({});
+      setErroRotas("");
+      setOrdenarPorProximidade(false);
+
+      console.error("Erro ao obter localização:", error);
+
+      Alert.alert(
+        "Localização indisponível",
+        "Não foi possível obter sua localização. Verifique se o GPS está ativado e tente novamente."
+      );
+    } finally {
+      setCarregandoLocalizacao(false);
+    }
+  };
+
+  const abrirRota = async (local: Local) => {
+    const destino =
+      local.latitude !== null && local.longitude !== null
+        ? `${local.latitude},${local.longitude}`
+        : local.endereco;
+
+    const url =
+      Platform.OS === "ios"
+        ? `http://maps.apple.com/?daddr=${encodeURIComponent(destino)}&dirflg=d`
+        : `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(destino)}&travelmode=driving`;
+
+    try {
+      await Linking.openURL(url);
+    } catch (error) {
+      console.error("Erro ao abrir rota:", error);
+      Alert.alert("Erro", "Não foi possível abrir o aplicativo de mapas.");
+    }
+  };
+
   const abrirServicos = (localId: string) => {
     router.push({
       pathname: "/servicos",
@@ -144,21 +258,39 @@ export default function Locais() {
     .toLowerCase()
     .trim();
   const termoBusca = normalizar(busca);  
-  const locaisFiltrados = locais.filter((local) => {
-    const correspondeCategoria =
-      categoriaAtiva === CATEGORIA_TODOS ||
-      local.categoriaId === categoriaAtiva;
+  const locaisFiltrados = locais
+    .filter((local) => {
+      const correspondeCategoria =
+        categoriaAtiva === CATEGORIA_TODOS ||
+        local.categoriaId === categoriaAtiva;
 
-    const textoLocal = normalizar(
-      `${local.nome} ${local.endereco}`
-    );
+      const textoLocal = normalizar(
+        `${local.nome} ${local.endereco}`
+      );
 
-    const correspondeBusca =
-      termoBusca === "" ||
-      textoLocal.includes(termoBusca);
+      const correspondeBusca =
+        termoBusca === "" ||
+        textoLocal.includes(termoBusca);
 
-    return correspondeCategoria && correspondeBusca;
-  });
+      return correspondeCategoria && correspondeBusca;
+    })
+    .map((local) => ({
+      ...local,
+      distanciaRotaMetros: distanciasPorRota[local.id] ?? null,
+    }))
+    .sort((a, b) => {
+      if (!ordenarPorProximidade) return 0;
+
+      if (
+        a.distanciaRotaMetros === null &&
+        b.distanciaRotaMetros === null
+      ) return 0;
+
+      if (a.distanciaRotaMetros === null) return 1;
+      if (b.distanciaRotaMetros === null) return -1;
+
+      return a.distanciaRotaMetros - b.distanciaRotaMetros;
+    });
 
   return (
     <SafeAreaView style={styles.screen}>
@@ -334,6 +466,58 @@ export default function Locais() {
               </Pressable>
             </View>
 
+          <View style={styles.locationActions}>
+            <Pressable
+              style={styles.locationActionButton}
+              onPress={obterLocalizacao}
+              disabled={carregandoLocalizacao || carregandoRotas}
+              accessibilityRole="button"
+            >
+              {carregandoLocalizacao || carregandoRotas ? (
+                <ActivityIndicator color={COLORS.white} size="small" />
+              ) : (
+                <Ionicons name="locate" size={17} color={COLORS.white} />
+              )}
+
+              <Text style={styles.locationActionButtonText}>
+                {carregandoRotas
+                  ? "Calculando rotas..."
+                  : carregandoLocalizacao
+                    ? "Localizando..."
+                    : coordenadasUsuario
+                      ? "Atualizar localização"
+                      : "Usar minha localização"}
+              </Text>
+            </Pressable>
+
+            <Pressable
+              style={[
+                styles.locationActionButton,
+                styles.locationActionButtonSecondary,
+                !coordenadasUsuario && styles.locationActionButtonDisabled,
+              ]}
+              onPress={() =>
+                setOrdenarPorProximidade((atual) => !atual)
+              }
+              disabled={!coordenadasUsuario}
+              accessibilityRole="button"
+            >
+              <Ionicons
+                name="swap-vertical"
+                size={17}
+                color={COLORS.blue}
+              />
+
+              <Text style={styles.locationActionButtonSecondaryText}>
+                {ordenarPorProximidade ? "Ordem padrão" : "Mais próximos"}
+              </Text>
+            </Pressable>
+          </View>
+
+          {erroRotas ? (
+            <Text style={styles.locationError}>{erroRotas}</Text>
+          ) : null}
+
           <View style={styles.localList}>
             {carregando ? (
               <ActivityIndicator
@@ -390,7 +574,13 @@ export default function Locais() {
                       </Text>
 
                       <Text style={styles.distance}>
-                        {local.distancia}
+                        {!coordenadasUsuario
+                          ? "Ative a localização"
+                          : carregandoRotas
+                            ? "Calculando rota..."
+                            : formatarDistancia(
+                                distanciasPorRota[local.id] ?? null
+                              ) ?? "Distância indisponível"}
                       </Text>
                     </View>
 
@@ -457,6 +647,21 @@ export default function Locais() {
 
                       <Text style={styles.ratingButtonText}>
                         Avaliar local
+                      </Text>
+                    </Pressable>
+
+                    <Pressable
+                      style={styles.routeButton}
+                      onPress={() => abrirRota(local)}
+                      accessibilityRole="button"
+                    >
+                      <Ionicons
+                        name="navigate"
+                        size={15}
+                        color={COLORS.blue}
+                      />
+                      <Text style={styles.routeButtonText}>
+                        Como chegar
                       </Text>
                     </Pressable>
 
@@ -921,6 +1126,71 @@ const styles = StyleSheet.create({
   clearButton: {
     padding: 6,
     marginLeft: 4,
+  },
+
+  locationActions: {
+    flexDirection: "row",
+    gap: 8,
+    marginBottom: 14,
+  },
+
+  locationError: {
+    color: "#B42318",
+    fontSize: 12,
+    marginBottom: 10,
+  },
+
+  locationActionButton: {
+    flex: 1,
+    minHeight: 42,
+    borderRadius: 12,
+    backgroundColor: COLORS.blue,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 7,
+    gap: 5,
+  },
+
+  locationActionButtonSecondary: {
+    backgroundColor: COLORS.white,
+    borderWidth: 1,
+    borderColor: COLORS.blue,
+  },
+
+  locationActionButtonDisabled: {
+    opacity: 0.45,
+  },
+
+  locationActionButtonText: {
+    color: COLORS.white,
+    fontSize: 11,
+    fontWeight: "700",
+  },
+
+  locationActionButtonSecondaryText: {
+    color: COLORS.blue,
+    fontSize: 11,
+    fontWeight: "700",
+  },
+
+  routeButton: {
+    height: 28,
+    borderRadius: 15,
+    borderWidth: 1,
+    borderColor: COLORS.blue,
+    backgroundColor: COLORS.lightBlue,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 5,
+    gap: 5,
+  },
+
+  routeButtonText: {
+    color: COLORS.blue,
+    fontSize: 12,
+    fontWeight: "700",
   },
 
   bellButton: {
