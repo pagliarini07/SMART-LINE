@@ -72,6 +72,15 @@ export function sanitizarPedido(pedido: string): string {
     .trim();
 }
 
+const MAX_ALTERNATIVAS = 2;
+const MAX_MOTIVO = 300;
+const MAX_PERGUNTA = 220;
+
+/** Texto longo demais é cortado (com "…") em vez de recusar a resposta. */
+function limitarTexto(texto: string, maximo: number): string {
+  return texto.length <= maximo ? texto : `${texto.slice(0, maximo - 1).trimEnd()}…`;
+}
+
 function ehObjeto(valor: unknown): valor is Record<string, unknown> {
   return typeof valor === "object" && valor !== null && !Array.isArray(valor);
 }
@@ -141,7 +150,7 @@ export function validarTriagemResposta(
 
   const motivo = valor.motivo.trim();
 
-  if (!motivo || motivo.length > 300) {
+  if (!motivo) {
     throw new Error("Resposta inválida: motivo.");
   }
 
@@ -156,7 +165,11 @@ export function validarTriagemResposta(
     180
   );
 
-  if (!Array.isArray(valor.alternativas) || valor.alternativas.length > 2) {
+  // Com o mesmo serviço em vários locais (IPTU em 3 unidades do Resolve,
+  // Cadastro Único em 7 CRAS) a IA às vezes manda mais de 2 alternativas.
+  // Antes isso derrubava a triagem inteira (502); agora ficam só as 2
+  // primeiras válidas (issue #95).
+  if (!Array.isArray(valor.alternativas)) {
     throw new Error("Resposta inválida: alternativas.");
   }
 
@@ -176,7 +189,9 @@ export function validarTriagemResposta(
       continue;
     }
 
-    alternativas.push(alternativa);
+    if (alternativas.length < MAX_ALTERNATIVAS) {
+      alternativas.push(alternativa);
+    }
   }
 
   const pergunta = valor.pergunta_esclarecimento;
@@ -187,19 +202,16 @@ export function validarTriagemResposta(
       throw new Error("Resposta inválida: pergunta_esclarecimento.");
     }
 
+    // Pergunta vazia conta como "sem pergunta"; a política de confiança
+    // coloca uma pergunta padrão se precisar.
     const texto = pergunta.trim();
-
-    if (!texto || texto.length > 220) {
-      throw new Error("Resposta inválida: pergunta_esclarecimento.");
-    }
-
-    perguntaEsclarecimento = texto;
+    perguntaEsclarecimento = texto ? limitarTexto(texto, MAX_PERGUNTA) : null;
   }
 
   return {
     servico_id: servicoId,
     confianca,
-    motivo,
+    motivo: limitarTexto(motivo, MAX_MOTIVO),
     documentos,
     alternativas,
     pergunta_esclarecimento: perguntaEsclarecimento,
