@@ -109,25 +109,31 @@ export function validarTriagemResposta(
     throw new Error("Resposta inválida da IA.");
   }
 
-  const servicoId = valor.servico_id;
+  const servicoRecebido = valor.servico_id;
 
-  if (
-    servicoId !== null &&
-    (typeof servicoId !== "string" || !idsServicosValidos.has(servicoId))
-  ) {
-    throw new Error("A IA retornou um serviço inexistente.");
+  if (servicoRecebido !== null && typeof servicoRecebido !== "string") {
+    throw new Error("Resposta inválida: servico_id.");
   }
 
-  const confianca = valor.confianca;
+  const confiancaRecebida = valor.confianca;
 
   if (
-    typeof confianca !== "number" ||
-    !Number.isFinite(confianca) ||
-    confianca < 0 ||
-    confianca > 1
+    typeof confiancaRecebida !== "number" ||
+    !Number.isFinite(confiancaRecebida) ||
+    confiancaRecebida < 0 ||
+    confiancaRecebida > 1
   ) {
     throw new Error("Resposta inválida: confianca.");
   }
+
+  // Serviço fora do catálogo = a IA inventou. Em vez de derrubar a triagem
+  // (erro pro usuário), a escolha é descartada e a confiança zerada; a
+  // política de confiança transforma isso em pergunta de esclarecimento.
+  const servicoInventado =
+    servicoRecebido !== null && !idsServicosValidos.has(servicoRecebido);
+
+  const servicoId = servicoInventado ? null : servicoRecebido;
+  const confianca = servicoInventado ? 0 : confiancaRecebida;
 
   if (typeof valor.motivo !== "string") {
     throw new Error("Resposta inválida: motivo.");
@@ -139,8 +145,12 @@ export function validarTriagemResposta(
     throw new Error("Resposta inválida: motivo.");
   }
 
+  // A função usa os documentos do catálogo, não os da IA; se ela mandar
+  // mais de 5, só cortamos em vez de recusar a resposta inteira.
   const documentos = validarListaTextos(
-    valor.documentos,
+    Array.isArray(valor.documentos)
+      ? valor.documentos.slice(0, 5)
+      : valor.documentos,
     "documentos",
     5,
     180
@@ -153,13 +163,17 @@ export function validarTriagemResposta(
   const alternativas: string[] = [];
 
   for (const alternativa of valor.alternativas) {
+    if (typeof alternativa !== "string") {
+      throw new Error("Resposta inválida: alternativas.");
+    }
+
+    // Alternativa inventada, repetida ou igual à principal: só é ignorada.
     if (
-      typeof alternativa !== "string" ||
       !idsServicosValidos.has(alternativa) ||
       alternativa === servicoId ||
       alternativas.includes(alternativa)
     ) {
-      throw new Error("A IA retornou uma alternativa inválida.");
+      continue;
     }
 
     alternativas.push(alternativa);
@@ -189,5 +203,156 @@ export function validarTriagemResposta(
     documentos,
     alternativas,
     pergunta_esclarecimento: perguntaEsclarecimento,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Confiança mínima (issue #96): a IA não deve "chutar".
+// ---------------------------------------------------------------------------
+
+/**
+ * Abaixo disso a recomendação não é tratada como certeza: o app mostra o
+ * serviço junto das alternativas ("Não tenho certeza — qual dessas?").
+ * Mesmo valor de LIMIAR_CONFIANCA em services/recomendacao.ts.
+ */
+export const CONFIANCA_MINIMA = 0.6;
+
+/**
+ * Abaixo disso o serviço escolhido é descartado e o cidadão recebe só uma
+ * pergunta de esclarecimento. Ex.: "Preciso resolver um documento".
+ */
+export const CONFIANCA_DESCARTE = 0.35;
+
+export const PERGUNTA_PADRAO_AMBIGUO =
+  "Pode dar mais detalhes? Por exemplo, qual documento ou serviço você precisa e se é emissão, renovação ou segunda via.";
+
+export const PERGUNTA_PADRAO_SEM_SERVICO =
+  "Não encontrei esse serviço no SmartLine. Pode descrever de outro jeito, dizendo qual documento ou órgão você procura?";
+
+/**
+ * Aplica as regras de confiança depois da validação:
+ * - confiança muito baixa: descarta o serviço e pede esclarecimento;
+ * - sem serviço: sempre devolve uma pergunta (nunca resposta vazia);
+ * - confiança alta: não manda pergunta junto, pra não confundir a tela.
+ */
+export function aplicarPoliticaConfianca(
+  resposta: TriagemResposta
+): TriagemResposta {
+  if (resposta.servico_id !== null && resposta.confianca < CONFIANCA_DESCARTE) {
+    return {
+      ...resposta,
+      servico_id: null,
+      documentos: [],
+      alternativas: [],
+      pergunta_esclarecimento:
+        resposta.pergunta_esclarecimento ?? PERGUNTA_PADRAO_AMBIGUO,
+    };
+  }
+
+  if (resposta.servico_id === null) {
+    return {
+      ...resposta,
+      documentos: [],
+      alternativas: [],
+      pergunta_esclarecimento:
+        resposta.pergunta_esclarecimento ??
+        (resposta.confianca > 0
+          ? PERGUNTA_PADRAO_AMBIGUO
+          : PERGUNTA_PADRAO_SEM_SERVICO),
+    };
+  }
+
+  if (resposta.confianca >= CONFIANCA_MINIMA) {
+    return { ...resposta, pergunta_esclarecimento: null };
+  }
+
+  return resposta;
+}
+
+// ---------------------------------------------------------------------------
+// Leitura da resposta do Gemini e tratamento de falhas.
+// ---------------------------------------------------------------------------
+
+/**
+ * Pega o texto da resposta do Gemini, ignorando blocos de "pensamento".
+ */
+export function extrairTextoGemini(payload: unknown): string {
+  const candidatos = ehObjeto(payload) ? payload.candidates : null;
+  const primeiro = Array.isArray(candidatos) ? candidatos[0] : null;
+  const conteudo = ehObjeto(primeiro) ? primeiro.content : null;
+  const partes = ehObjeto(conteudo) ? conteudo.parts : null;
+
+  if (Array.isArray(partes)) {
+    for (const parte of partes) {
+      if (
+        ehObjeto(parte) &&
+        typeof parte.text === "string" &&
+        parte.thought !== true &&
+        parte.text.trim()
+      ) {
+        return parte.text;
+      }
+    }
+  }
+
+  throw new Error("A IA não retornou texto.");
+}
+
+/**
+ * Converte o texto da IA em objeto. Aceita o JSON cercado por ```json, que
+ * alguns modelos devolvem mesmo quando pedimos JSON puro.
+ */
+export function extrairJsonDaIA(texto: string): unknown {
+  const limpo = texto
+    .trim()
+    .replace(/^```(?:json)?\s*/i, "")
+    .replace(/\s*```$/, "")
+    .trim();
+
+  try {
+    return JSON.parse(limpo);
+  } catch {
+    throw new Error("A IA retornou JSON inválido.");
+  }
+}
+
+/** Erro HTTP devolvido pela API do Gemini (cota, fora do ar, etc.). */
+export class ErroProvedorIA extends Error {
+  status: number;
+
+  constructor(status: number) {
+    super(`Erro do provedor de IA (${status}).`);
+    this.name = "ErroProvedorIA";
+    this.status = status;
+  }
+}
+
+/**
+ * Traduz uma falha da IA para a resposta HTTP da função. O app usa o status
+ * pra escolher a mensagem: 503 = IA indisponível (cota esgotada ou Gemini
+ * fora do ar), 504 = demorou demais, 502 = resposta que não deu pra usar.
+ */
+export function respostaDeFalhaDaIA(erro: unknown): {
+  status: number;
+  mensagem: string;
+} {
+  // No Deno o abort do fetch é um DOMException; checamos só o nome.
+  if (ehObjeto(erro) && erro.name === "AbortError") {
+    return { status: 504, mensagem: "A IA demorou demais para responder." };
+  }
+
+  if (
+    erro instanceof ErroProvedorIA &&
+    (erro.status === 429 || erro.status >= 500)
+  ) {
+    return {
+      status: 503,
+      mensagem: "O serviço de IA está indisponível no momento.",
+    };
+  }
+
+  return {
+    status: 502,
+    mensagem: "Não foi possível realizar a triagem agora.",
   };
 }
