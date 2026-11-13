@@ -13,7 +13,8 @@ export type Local = {
   categoriaId: string | null;
   nome: string;
   endereco: string;
-  distancia: string | null;
+  latitude: number | null;
+  longitude: number | null;
   aberto: boolean;
   pessoasAguardando: number;
   icone: keyof typeof Ionicons.glyphMap;
@@ -74,7 +75,7 @@ export async function listarLocais(): Promise<Local[]> {
   const { data: locais, error: locaisError } = await supabase
     .from("locais")
     .select(
-      "id, categoria_id, nome, endereco, distancia, horario_abertura, horario_fechamento, icone, cor_icone, cor_fundo, ativo"
+      "id, categoria_id, nome, endereco, latitude, longitude, horario_abertura, horario_fechamento, icone, cor_icone, cor_fundo, ativo"
     )
     .eq("ativo", true)
     .order("nome");
@@ -123,7 +124,8 @@ export async function listarLocais(): Promise<Local[]> {
       categoriaId: local.categoria_id,
       nome: local.nome,
       endereco: local.endereco,
-      distancia: local.distancia,
+      latitude: local.latitude == null ? null : Number(local.latitude),
+      longitude: local.longitude == null ? null : Number(local.longitude),
       aberto: estaAberto(local.horario_abertura, local.horario_fechamento),
       pessoasAguardando,
       icone: (local.icone as keyof typeof Ionicons.glyphMap) ?? "grid-outline",
