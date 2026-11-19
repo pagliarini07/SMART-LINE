@@ -220,7 +220,18 @@ export default function Perfil() {
       setSucesso("Dados salvos com sucesso.");
     } catch (error) {
       console.error("Erro ao salvar perfil:", error);
-      setErro("Não foi possível salvar seus dados agora.");
+
+      const erroDeCpfDuplicado =
+        typeof error === "object" &&
+        error !== null &&
+        "code" in error &&
+        error.code === "23505";
+
+      setErro(
+        erroDeCpfDuplicado
+          ? "Esse CPF já está cadastrado em outra conta."
+          : "Não foi possível salvar seus dados agora."
+      );
     } finally {
       setSalvando(false);
     }
