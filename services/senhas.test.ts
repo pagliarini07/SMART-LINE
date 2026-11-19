@@ -8,7 +8,6 @@ import {
   cancelarSenha,
   getHistoricoSenhas,
   getSenhaAtiva,
-  mensagemErroCancelamento,
 } from "./senhas";
 
 type ResultadoMock = {
@@ -383,16 +382,6 @@ describe("cancelarSenha", () => {
   });
 });
 
-describe("mensagemErroCancelamento", () => {
-  it("explica falta de conexão quando a requisição nem chega no servidor", () => {
-    expect(
-      mensagemErroCancelamento(new TypeError("Failed to fetch"))
-    ).toContain("Sem conexão");
-  });
-
-  it("usa uma mensagem genérica para os demais erros", () => {
-    expect(mensagemErroCancelamento({ message: "falha no banco" })).toBe(
-      "Não foi possível sair da fila agora. Tente novamente."
-    );
-  });
-});
+// mensagemErroCancelamento foi unificada em utils/errors.ts
+// (mensagemErroSupabase) -- issue #113. Os testes equivalentes agora
+// ficam em utils/errors.test.ts.

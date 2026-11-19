@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
@@ -10,19 +10,14 @@ import {
   View
 } from "react-native";
 
+import { Cores } from "../../constants/cores";
+import { useTema } from "../../hooks/useTema";
 import { buscarRanking, RankingLocal } from "../../services/avaliacoes";
 
-const COLORS = {
-  blue: "#0757D8",
-  yellow: "#FFC400",
-  background: "#F7F9FC",
-  white: "#FFFFFF",
-  text: "#0D1E46",
-  secondary: "#65708A",
-  border: "#E8EDF7",
-};
-
 export default function RankingScreen() {
+  const COLORS = useTema();
+  const styles = useMemo(() => criarStyles(COLORS), [COLORS]);
+
   const [ranking, setRanking] = useState<RankingLocal[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -243,191 +238,195 @@ export default function RankingScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: COLORS.background,
-  },
+// Estilos derivados das cores do tema ativo (issue #115) — por isso vêm de
+// uma função em vez de um StyleSheet.create() fixo no topo do arquivo.
+function criarStyles(COLORS: Cores) {
+  return StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: COLORS.background,
+    },
 
     header: {
-    paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 12,
-    flexDirection: "row",
-    alignItems: "center",
+      paddingHorizontal: 20,
+      paddingTop: 20,
+      paddingBottom: 12,
+      flexDirection: "row",
+      alignItems: "center",
     },
 
     backButton: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    backgroundColor: COLORS.white,
-    alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 1,
-    borderColor: COLORS.border,
+      width: 38,
+      height: 38,
+      borderRadius: 19,
+      backgroundColor: COLORS.white,
+      alignItems: "center",
+      justifyContent: "center",
+      borderWidth: 1,
+      borderColor: COLORS.border,
     },
 
     headerText: {
-    flex: 1,
-    marginLeft: 12,
+      flex: 1,
+      marginLeft: 12,
     },
 
-  title: {
-    color: COLORS.text,
-    fontSize: 26,
-    fontWeight: "700",
-  },
+    title: {
+      color: COLORS.text,
+      fontSize: 26,
+      fontWeight: "700",
+    },
 
-  subtitle: {
-    color: COLORS.secondary,
-    fontSize: 14,
-    marginTop: 5,
-  },
+    subtitle: {
+      color: COLORS.secondary,
+      fontSize: 14,
+      marginTop: 5,
+    },
 
-  list: {
-    paddingHorizontal: 16,
-    paddingBottom: 24,
-  },
+    list: {
+      paddingHorizontal: 16,
+      paddingBottom: 24,
+    },
 
-  card: {
-    backgroundColor: COLORS.white,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    padding: 14,
-    marginBottom: 10,
-    flexDirection: "row",
-    alignItems: "center",
-  },
+    card: {
+      backgroundColor: COLORS.white,
+      borderRadius: 14,
+      borderWidth: 1,
+      borderColor: COLORS.border,
+      padding: 14,
+      marginBottom: 10,
+      flexDirection: "row",
+      alignItems: "center",
+    },
 
-  position: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: "#EDF4FF",
-    alignItems: "center",
-    justifyContent: "center",
-  },
+    position: {
+      width: 36,
+      height: 36,
+      borderRadius: 18,
+      backgroundColor: COLORS.background,
+      alignItems: "center",
+      justifyContent: "center",
+    },
 
-  positionText: {
-    color: COLORS.blue,
-    fontSize: 15,
-    fontWeight: "700",
-  },
+    positionText: {
+      color: COLORS.blue,
+      fontSize: 15,
+      fontWeight: "700",
+    },
 
-  info: {
-    flex: 1,
-    marginLeft: 12,
-  },
+    info: {
+      flex: 1,
+      marginLeft: 12,
+    },
 
-  nome: {
-    color: COLORS.text,
-    fontSize: 15,
-    fontWeight: "700",
-  },
+    nome: {
+      color: COLORS.text,
+      fontSize: 15,
+      fontWeight: "700",
+    },
 
-  ratingRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginTop: 5,
-  },
+    ratingRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      marginTop: 5,
+    },
 
-  media: {
-    color: COLORS.text,
-    fontSize: 14,
-    fontWeight: "700",
-    marginLeft: 5,
-  },
+    media: {
+      color: COLORS.text,
+      fontSize: 14,
+      fontWeight: "700",
+      marginLeft: 5,
+    },
 
-  total: {
-    color: COLORS.secondary,
-    fontSize: 12,
-    marginLeft: 5,
-  },
+    total: {
+      color: COLORS.secondary,
+      fontSize: 12,
+      marginLeft: 5,
+    },
 
-  semAvaliacao: {
-    color: COLORS.secondary,
-    fontSize: 12,
-    marginTop: 5,
-  },
+    semAvaliacao: {
+      color: COLORS.secondary,
+      fontSize: 12,
+      marginTop: 5,
+    },
 
-  center: {
-    flex: 1,
-    backgroundColor: COLORS.background,
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 30,
-  },
+    center: {
+      flex: 1,
+      backgroundColor: COLORS.background,
+      alignItems: "center",
+      justifyContent: "center",
+      paddingHorizontal: 30,
+    },
 
-  loadingText: {
-    color: COLORS.secondary,
-    marginTop: 10,
-    fontSize: 14,
-  },
+    loadingText: {
+      color: COLORS.secondary,
+      marginTop: 10,
+      fontSize: 14,
+    },
 
-  errorText: {
-    color: COLORS.secondary,
-    fontSize: 14,
-    marginTop: 12,
-    textAlign: "center",
-  },
+    errorText: {
+      color: COLORS.secondary,
+      fontSize: 14,
+      marginTop: 12,
+      textAlign: "center",
+    },
 
-  retryButton: {
-    height: 44,
-    paddingHorizontal: 22,
-    backgroundColor: COLORS.blue,
-    borderRadius: 12,
-    alignItems: "center",
-    justifyContent: "center",
-    marginTop: 16,
-  },
+    retryButton: {
+      height: 44,
+      paddingHorizontal: 22,
+      backgroundColor: COLORS.blue,
+      borderRadius: 12,
+      alignItems: "center",
+      justifyContent: "center",
+      marginTop: 16,
+    },
 
-  retryButtonText: {
-    color: COLORS.white,
-    fontSize: 13.5,
-    fontWeight: "700",
-  },
+    retryButtonText: {
+      color: COLORS.white,
+      fontSize: 13.5,
+      fontWeight: "700",
+    },
 
-  loadMoreButton: {
-    height: 46,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    backgroundColor: COLORS.white,
-    alignItems: "center",
-    justifyContent: "center",
-    marginTop: 4,
-    marginBottom: 10,
-  },
+    loadMoreButton: {
+      height: 46,
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: COLORS.border,
+      backgroundColor: COLORS.white,
+      alignItems: "center",
+      justifyContent: "center",
+      marginTop: 4,
+      marginBottom: 10,
+    },
 
-  loadMoreButtonDisabled: {
-    opacity: 0.7,
-  },
+    loadMoreButtonDisabled: {
+      opacity: 0.7,
+    },
 
-  loadMoreText: {
-    color: COLORS.blue,
-    fontSize: 14,
-    fontWeight: "700",
-  },
+    loadMoreText: {
+      color: COLORS.blue,
+      fontSize: 14,
+      fontWeight: "700",
+    },
 
-  loadMoreError: {
-    color: "#D32F2F",
-    fontSize: 12,
-    textAlign: "center",
-    marginBottom: 8,
-  },
+    loadMoreError: {
+      color: "#D32F2F",
+      fontSize: 12,
+      textAlign: "center",
+      marginBottom: 8,
+    },
 
-  empty: {
-    alignItems: "center",
-    justifyContent: "center",
-    paddingTop: 100,
-  },
+    empty: {
+      alignItems: "center",
+      justifyContent: "center",
+      paddingTop: 100,
+    },
 
-  emptyText: {
-    color: COLORS.secondary,
-    fontSize: 14,
-    marginTop: 12,
-    textAlign: "center",
-  },
-});
+    emptyText: {
+      color: COLORS.secondary,
+      fontSize: 14,
+      marginTop: 12,
+      textAlign: "center",
+    },
+  });
+}
