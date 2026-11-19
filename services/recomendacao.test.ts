@@ -45,9 +45,8 @@ const mockRpc = supabase.rpc as jest.Mock;
 beforeEach(() => {
   mockFrom.mockReset();
   mockRpc.mockReset();
-  // contagem_espera (issue #93): por padrão, fila vazia -- os testes que
-  // se importam com o número exato sobrescrevem isso.
-  mockRpc.mockResolvedValue({ data: 0, error: null });
+  // contagem_espera_lote: por padrão, nenhuma senha aguardando.
+  mockRpc.mockResolvedValue({ data: [], error: null });
 });
 
 describe("recomendarServico", () => {
@@ -67,8 +66,8 @@ describe("recomendarServico", () => {
     expect(resultado?.documentosSugeridos.length).toBeGreaterThan(0);
     // Contagem de fila agora vem da RPC contagem_espera (issue #93),
     // não mais de consultar a tabela senhas direto (bloqueada por RLS).
-    expect(mockRpc).toHaveBeenCalledWith("contagem_espera", {
-      p_servico_id: "servico-documentos",
+    expect(mockRpc).toHaveBeenCalledWith("contagem_espera_lote", {
+      p_servico_ids: ["servico-documentos", "servico-tributario"],
     });
   });
 
