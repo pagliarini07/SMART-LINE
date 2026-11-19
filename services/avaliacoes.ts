@@ -16,6 +16,13 @@ export type RankingLocal = {
   total_avaliacoes: number;
 };
 
+export const RANKING_POR_PAGINA = 15;
+
+export type PaginaRanking = {
+  itens: RankingLocal[];
+  temMais: boolean;
+};
+
 /**
  * Busca a avaliação do usuário logado para um determinado local.
  */
@@ -141,19 +148,39 @@ export async function buscarMinhasAvaliacoes(): Promise<Avaliacao[]> {
 }
 
 /**
- * Busca o ranking geral dos locais.
+ * Busca uma página do ranking geral dos locais, ordenado por média de
+ * nota (issue #114). `pagina` começa em 0. Pede um registro a mais que
+ * o tamanho da página só pra saber se ainda existe uma próxima, sem
+ * precisar de uma consulta de count separada (mesmo padrão de
+ * getHistoricoSenhas em services/senhas.ts).
  *
- * A função do banco retorna apenas dados agregados:
- * nome, média das notas e quantidade de avaliações.
- *
- * Nenhuma informação sobre quem avaliou é retornada.
+ * A função do banco retorna apenas dados agregados: nome, média das
+ * notas e quantidade de avaliações. Nenhuma informação sobre quem
+ * avaliou é retornada.
  */
-export async function buscarRanking(): Promise<RankingLocal[]> {
-  const { data, error } = await supabase.rpc("buscar_ranking_locais");
+export async function buscarRanking(
+  pagina = 0,
+  tamanho = RANKING_POR_PAGINA
+): Promise<PaginaRanking> {
+  const inicio = pagina * tamanho;
+
+  const { data, error } = await supabase.rpc(
+    "buscar_ranking_locais_paginado",
+    {
+      p_limit: tamanho + 1,
+      p_offset: inicio,
+    }
+  );
 
   if (error) {
     throw error;
   }
 
-  return data ?? [];
+  const linhas = data ?? [];
+  const temMais = linhas.length > tamanho;
+
+  return {
+    itens: linhas.slice(0, tamanho),
+    temMais,
+  };
 }
