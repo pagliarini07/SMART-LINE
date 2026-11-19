@@ -11,7 +11,7 @@ import {
   View,
 } from "react-native";
 import { supabase } from "../../services/supabase";
-import { mensagemErroAuth } from "../../utils/errors";
+import { mensagemErroSupabase } from "../../utils/errors";
 
 export default function Cadastro() {
   const [nome, setNome] = useState("");
@@ -65,14 +65,14 @@ export default function Cadastro() {
       });
 
       if (error) {
-        setError(mensagemErroAuth(error));
+        setError(mensagemErroSupabase(error));
         return;
       }
 
       // O Login mostra o aviso de "conta criada".
       router.replace({ pathname: "/login", params: { cadastro: "ok" } } as never);
     } catch (error) {
-      setError(mensagemErroAuth(error));
+      setError(mensagemErroSupabase(error));
     } finally {
       setCriando(false);
     }

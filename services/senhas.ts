@@ -245,23 +245,6 @@ export async function cancelarSenha(senhaId: string): Promise<void> {
   }
 }
 
-/**
- * Mensagem amigável pra falha ao sair da fila (rede fora, banco fora etc.).
- */
-export function mensagemErroCancelamento(error: unknown): string {
-  // Erros do supabase-js nem sempre são instâncias de Error, mas sempre
-  // têm "message".
-  const mensagem = String(
-    (error as { message?: unknown } | null)?.message ?? ""
-  ).toLowerCase();
-
-  if (mensagem.includes("failed to fetch") || mensagem.includes("network")) {
-    return "Sem conexão com o servidor. Verifique sua internet e tente sair da fila novamente.";
-  }
-
-  return "Não foi possível sair da fila agora. Tente novamente.";
-}
-
 export type AtendimentoHistorico = {
   id: string;
   servico: string;

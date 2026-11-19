@@ -21,10 +21,10 @@ import {
   atualizarSenhaAtiva,
   cancelarSenha,
   getSenhaAtiva,
-  mensagemErroCancelamento,
   SenhaAtiva,
   StatusAtendimento,
 } from "../../services/senhas";
+import { mensagemErroSupabase } from "../../utils/errors";
 
 const COLORS = {
   blue: "#0757D8",
@@ -216,7 +216,12 @@ export default function MinhaSenha() {
       setConfirmandoSaida(false);
     } catch (error) {
       console.error("Erro ao sair da fila:", error);
-      setErroSair(mensagemErroCancelamento(error));
+      setErroSair(
+        mensagemErroSupabase(
+          error,
+          "Não foi possível sair da fila agora. Tente novamente."
+        )
+      );
     } finally {
       setSaindo(false);
     }
