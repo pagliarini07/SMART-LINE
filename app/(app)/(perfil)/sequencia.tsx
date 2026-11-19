@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Pressable,
@@ -48,36 +48,37 @@ export default function Sequencia() {
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState("");
 
-  useEffect(() => {
-    async function carregarSequencia() {
-      if (!user) {
-        setCarregando(false);
-        return;
-      }
-
-      try {
-        setErro("");
-
-        const resultado =
-          await getSequenciaAtendimentos(user.id);
-
-        setDados(resultado);
-      } catch (error) {
-        console.error(
-          "Erro ao carregar sequência:",
-          error
-        );
-
-        setErro(
-          "Não foi possível carregar sua sequência agora."
-        );
-      } finally {
-        setCarregando(false);
-      }
+  const carregarSequencia = useCallback(async () => {
+    if (!user) {
+      setCarregando(false);
+      return;
     }
 
-    carregarSequencia();
+    setCarregando(true);
+    setErro("");
+
+    try {
+      const resultado =
+        await getSequenciaAtendimentos(user.id);
+
+      setDados(resultado);
+    } catch (error) {
+      console.error(
+        "Erro ao carregar sequência:",
+        error
+      );
+
+      setErro(
+        "Não foi possível carregar sua sequência agora."
+      );
+    } finally {
+      setCarregando(false);
+    }
   }, [user]);
+
+  useEffect(() => {
+    carregarSequencia();
+  }, [carregarSequencia]);
 
   return (
     <SafeAreaView style={styles.screen}>
@@ -278,9 +279,21 @@ export default function Sequencia() {
             </View>
 
             {erro ? (
-              <Text style={styles.errorText}>
-                {erro}
-              </Text>
+              <View style={styles.errorContainer}>
+                <Text style={styles.errorText}>
+                  {erro}
+                </Text>
+
+                <Pressable
+                  style={styles.retryButton}
+                  onPress={carregarSequencia}
+                  accessibilityRole="button"
+                >
+                  <Text style={styles.retryButtonText}>
+                    Tentar novamente
+                  </Text>
+                </Pressable>
+              </View>
             ) : null}
           </>
         )}
@@ -488,10 +501,28 @@ const styles = StyleSheet.create({
     marginLeft: 8,
   },
 
+  errorContainer: {
+    alignItems: "center",
+    marginTop: 12,
+  },
+
   errorText: {
     color: COLORS.red,
     fontSize: 12,
     textAlign: "center",
+  },
+
+  retryButton: {
+    backgroundColor: COLORS.blue,
+    borderRadius: 10,
+    paddingHorizontal: 20,
+    paddingVertical: 11,
     marginTop: 12,
+  },
+
+  retryButtonText: {
+    color: COLORS.white,
+    fontSize: 14,
+    fontWeight: "700",
   },
 });
