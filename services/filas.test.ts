@@ -19,33 +19,43 @@ describe("contarEsperaPorServico", () => {
     expect(mockRpc).not.toHaveBeenCalled();
   });
 
-  it("chama contagem_espera uma vez por serviço (ids únicos) e monta o mapa", async () => {
-    mockRpc.mockImplementation(
-      (_nome: string, args: { p_servico_id: string }) => {
-        const valores: Record<string, number> = {
-          "servico-1": 5,
-          "servico-2": 0,
-        };
-
-        return Promise.resolve({
-          data: valores[args.p_servico_id] ?? 0,
-          error: null,
-        });
-      }
-    );
+  it("faz uma única chamada em lote com ids únicos e monta o mapa", async () => {
+    mockRpc.mockResolvedValue({
+      data: [
+        { servico_id: "servico-1", quantidade: 5 },
+        { servico_id: "servico-2", quantidade: 0 },
+      ],
+      error: null,
+    });
 
     const resultado = await contarEsperaPorServico([
       "servico-1",
       "servico-2",
-      // Id repetido -- não deve chamar a RPC de novo pro mesmo serviço.
+      // Id repetido -- deve ser enviado apenas uma vez.
       "servico-1",
     ]);
 
-    expect(mockRpc).toHaveBeenCalledTimes(2);
-    expect(mockRpc).toHaveBeenCalledWith("contagem_espera", {
-      p_servico_id: "servico-1",
+    expect(mockRpc).toHaveBeenCalledTimes(1);
+    expect(mockRpc).toHaveBeenCalledWith("contagem_espera_lote", {
+      p_servico_ids: ["servico-1", "servico-2"],
     });
+    expect(resultado.size).toBe(2);
     expect(resultado.get("servico-1")).toBe(5);
+    expect(resultado.get("servico-2")).toBe(0);
+  });
+
+  it("mantém zero para serviço sem linha no retorno", async () => {
+    mockRpc.mockResolvedValue({
+      data: [{ servico_id: "servico-1", quantidade: 3 }],
+      error: null,
+    });
+
+    const resultado = await contarEsperaPorServico([
+      "servico-1",
+      "servico-2",
+    ]);
+
+    expect(resultado.get("servico-1")).toBe(3);
     expect(resultado.get("servico-2")).toBe(0);
   });
 
