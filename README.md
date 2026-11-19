@@ -48,3 +48,18 @@ Join our community of developers creating universal apps.
 
 - [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
 - [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+
+## Verificações de qualidade
+
+Antes de abrir um Pull Request, execute as mesmas verificações usadas pelo CI:
+
+```bash
+npm ci
+npm run lint
+npx tsc --noEmit
+npm test -- --runInBand
+```
+
+O repositório possui um workflow do GitHub Actions que executa automaticamente essas verificações em Pull Requests e em pushes para a branch `main`.
+
+O Pull Request só deve ser integrado quando lint, verificação de tipos e testes estiverem passando.
