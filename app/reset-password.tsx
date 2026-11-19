@@ -12,7 +12,7 @@ import {
 } from "react-native";
 
 import { supabase } from "../services/supabase";
-import { mensagemErroAuth } from "../utils/errors";
+import { mensagemErroSupabase } from "../utils/errors";
 
 export default function ResetPassword() {
   const params = useLocalSearchParams<{
@@ -119,7 +119,7 @@ export default function ResetPassword() {
       } catch (error) {
         if (ativo) {
           setSessaoValida(false);
-          setErro(mensagemErroAuth(error));
+          setErro(mensagemErroSupabase(error));
         }
       } finally {
         if (ativo) {
@@ -174,7 +174,7 @@ export default function ResetPassword() {
 
       await supabase.auth.signOut();
     } catch (error) {
-      setErro(mensagemErroAuth(error));
+      setErro(mensagemErroSupabase(error));
     } finally {
       setSalvando(false);
     }

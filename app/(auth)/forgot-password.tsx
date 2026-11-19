@@ -14,7 +14,7 @@ import {
 } from "react-native";
 
 import { supabase } from "../../services/supabase";
-import { mensagemErroAuth } from "../../utils/errors";
+import { mensagemErroSupabase } from "../../utils/errors";
 
 export default function ForgotPassword() {
   const [email, setEmail] = useState("");
@@ -54,7 +54,7 @@ export default function ForgotPassword() {
         "Se houver uma conta associada a esse e-mail, você receberá um link para redefinir sua senha. Verifique também a caixa de spam."
       );
     } catch (error) {
-      setErro(mensagemErroAuth(error));
+      setErro(mensagemErroSupabase(error));
     } finally {
       setCarregando(false);
     }

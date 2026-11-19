@@ -12,12 +12,8 @@ import {
 } from "react-native";
 import ConfirmacaoInline from "../../components/ConfirmacaoInline";
 import { useAuth } from "../../hooks/useAuth";
-import {
-  cancelarSenha,
-  mensagemErroCancelamento,
-  retirarSenha,
-  SenhaAtiva,
-} from "../../services/senhas";
+import { cancelarSenha, retirarSenha, SenhaAtiva } from "../../services/senhas";
+import { mensagemErroSupabase } from "../../utils/errors";
 
 const COLORS = {
   blue: "#0757D8",
@@ -119,7 +115,12 @@ export default function Fila() {
       }
     } catch (error) {
       console.error("Erro ao sair da fila:", error);
-      setErroSair(mensagemErroCancelamento(error));
+      setErroSair(
+        mensagemErroSupabase(
+          error,
+          "Não foi possível sair da fila agora. Tente novamente."
+        )
+      );
       setSaindo(false);
     }
   }

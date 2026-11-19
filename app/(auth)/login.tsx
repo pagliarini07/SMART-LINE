@@ -11,7 +11,7 @@ import {
   View,
 } from "react-native";
 import { useAuth } from "../../hooks/useAuth";
-import { mensagemErroAuth } from "../../utils/errors";
+import { mensagemErroSupabase } from "../../utils/errors";
 
 export default function Login() {
     const [email, setEmail] = useState("");
@@ -46,7 +46,7 @@ export default function Login() {
             await signIn(email.trim().toLowerCase(), password);
             router.replace("/locais");
         } catch (error) {
-            setError(mensagemErroAuth(error));
+            setError(mensagemErroSupabase(error));
         } finally {
             setEntrando(false);
         }
