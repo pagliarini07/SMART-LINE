@@ -1,13 +1,14 @@
 import { supabase } from "./supabase";
 
+type ContagemEsperaLote = {
+  servico_id: string;
+  quantidade: number;
+};
+
 /**
- * Pra cada id de serviço, consulta quantas senhas ainda estão
- * aguardando via a RPC contagem_espera (issue #93) — agregada dentro
- * do banco (SECURITY DEFINER), então funciona mesmo com o RLS de
- * `senhas` restringindo cada usuário às próprias linhas. Antes, cada
- * tela/serviço contava direto na tabela `senhas`, o que só enxergava a
- * senha do próprio usuário logado e dava números errados pra qualquer
- * outro serviço/local.
+ * Consulta em lote quantas senhas ainda estão aguardando por serviço.
+ * A RPC agrega os dados no banco (SECURITY DEFINER), respeitando o RLS
+ * sem expor linhas individuais de senhas.
  */
 export async function contarEsperaPorServico(
   servicoIds: string[]
@@ -19,22 +20,21 @@ export async function contarEsperaPorServico(
     return contagem;
   }
 
-  const resultados = await Promise.all(
-    idsUnicos.map(async (servicoId) => {
-      const { data, error } = await supabase.rpc("contagem_espera", {
-        p_servico_id: servicoId,
-      });
+  const { data, error } = await supabase.rpc("contagem_espera_lote", {
+    p_servico_ids: idsUnicos,
+  });
 
-      if (error) {
-        throw error;
-      }
+  if (error) {
+    throw error;
+  }
 
-      return [servicoId, data ?? 0] as const;
-    })
-  );
+  // A RPC retorna uma linha por serviço, inclusive quando a fila está vazia.
+  for (const servicoId of idsUnicos) {
+    contagem.set(servicoId, 0);
+  }
 
-  for (const [servicoId, total] of resultados) {
-    contagem.set(servicoId, total);
+  for (const resultado of (data ?? []) as ContagemEsperaLote[]) {
+    contagem.set(resultado.servico_id, resultado.quantidade);
   }
 
   return contagem;
