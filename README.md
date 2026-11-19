@@ -63,3 +63,11 @@ npm test -- --runInBand
 O repositório possui um workflow do GitHub Actions que executa automaticamente essas verificações em Pull Requests e em pushes para a branch `main`.
 
 O Pull Request só deve ser integrado quando lint, verificação de tipos e testes estiverem passando.
+
+## Banco de dados e migrations
+
+O schema consolidado atual do Supabase está documentado em [`docs/schema-supabase.md`](docs/schema-supabase.md).
+
+Toda alteração permanente no schema do Supabase deve ser versionada em `supabase/migrations/`. Mudanças feitas diretamente pelo Dashboard ou SQL Editor também devem receber uma migration correspondente no repositório.
+
+Não devem ser criadas tabelas, colunas, funções, triggers, policies ou outras alterações permanentes somente no ambiente remoto sem registro no Git.
