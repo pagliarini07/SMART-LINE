@@ -52,6 +52,9 @@ export default function BottomTabBar() {
             key={tab.route}
             style={styles.tab}
             onPress={() => router.push(tab.route as never)}
+            accessibilityRole="button"
+            accessibilityLabel={tab.label}
+            accessibilityState={{ selected: isActive }}
           >
             <Ionicons
               name={tab.icon}

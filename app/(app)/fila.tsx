@@ -130,7 +130,12 @@ export default function Fila() {
       <StatusBar barStyle="dark-content" backgroundColor={COLORS.background} />
 
       <View style={styles.header}>
-        <Pressable style={styles.backButton} onPress={() => router.back()}>
+        <Pressable
+          style={styles.backButton}
+          onPress={() => router.back()}
+          accessibilityRole="button"
+          accessibilityLabel="Voltar"
+        >
           <Ionicons name="chevron-back" size={22} color={COLORS.white} />
         </Pressable>
 
@@ -166,6 +171,8 @@ export default function Fila() {
             <Pressable
               style={styles.backToServicesButton}
               onPress={() => router.back()}
+              accessibilityRole="button"
+              accessibilityLabel="Voltar aos serviços"
             >
               <Text style={styles.backToServicesText}>
                 Voltar aos serviços
@@ -230,6 +237,8 @@ export default function Fila() {
                   setErroSair("");
                   setConfirmandoSaida(true);
                 }}
+                accessibilityRole="button"
+                accessibilityLabel="Sair da fila"
               >
                 <Text style={styles.leaveButtonText}>Sair da fila</Text>
               </Pressable>

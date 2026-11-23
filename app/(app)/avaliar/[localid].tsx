@@ -170,6 +170,8 @@ export default function AvaliarLocal() {
           <Pressable
             style={styles.backButton}
             onPress={falhaConexao ? carregarAvaliacao : () => router.back()}
+            accessibilityRole="button"
+            accessibilityLabel={falhaConexao ? "Tentar novamente" : "Voltar"}
           >
             <Text style={styles.backButtonText}>
               {falhaConexao ? "Tentar novamente" : "Voltar"}
@@ -190,6 +192,8 @@ export default function AvaliarLocal() {
         <Pressable
           style={styles.backIcon}
           onPress={() => router.back()}
+          accessibilityRole="button"
+          accessibilityLabel="Voltar"
         >
           <Ionicons
             name="arrow-back"
@@ -237,6 +241,8 @@ export default function AvaliarLocal() {
               key={estrela}
               onPress={() => setNota(estrela)}
               style={styles.starButton}
+              accessibilityRole="button"
+              accessibilityLabel={`Dar nota ${estrela} de 5 estrelas`}
             >
               <Ionicons
                 name={
@@ -297,6 +303,10 @@ export default function AvaliarLocal() {
           ]}
           onPress={salvarAvaliacao}
           disabled={salvando || salvo || nota === 0}
+          accessibilityRole="button"
+          accessibilityLabel={
+            avaliacaoId ? "Atualizar avaliação" : "Salvar avaliação"
+          }
         >
           {salvando ? (
             <ActivityIndicator color={COLORS.white} />

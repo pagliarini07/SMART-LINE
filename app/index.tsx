@@ -179,13 +179,23 @@ export default function Index() {
       </View>
 
       {/* BOTÕES */}
-      <Pressable style={styles.startButton} onPress={() => router.push("/login")}>
+      <Pressable
+        style={styles.startButton}
+        onPress={() => router.push("/login")}
+        accessibilityRole="button"
+        accessibilityLabel="Entrar"
+      >
         <Text style={styles.startButtonText}>
           Entrar
         </Text>
       </Pressable>
 
-      <Pressable style={styles.loginButton} onPress={() => router.push("/cadastro")}>
+      <Pressable
+        style={styles.loginButton}
+        onPress={() => router.push("/cadastro")}
+        accessibilityRole="button"
+        accessibilityLabel="Criar conta"
+      >
         <Text style={styles.loginText}>
           Criar conta
         </Text>

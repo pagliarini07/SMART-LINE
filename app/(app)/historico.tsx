@@ -150,6 +150,8 @@ export default function Historico() {
         <Pressable
           style={styles.backButton}
           onPress={() => router.back()}
+          accessibilityRole="button"
+          accessibilityLabel="Voltar"
         >
           <Ionicons
             name="chevron-back"
@@ -252,6 +254,12 @@ export default function Historico() {
               ]}
               onPress={carregarMais}
               disabled={carregandoMais}
+              accessibilityRole="button"
+              accessibilityLabel={
+                carregandoMais
+                  ? "Carregando mais histórico"
+                  : "Carregar mais histórico"
+              }
             >
               {carregandoMais ? (
                 <ActivityIndicator color={COLORS.blue} />
@@ -286,6 +294,8 @@ export default function Historico() {
             <Pressable
               style={styles.emptyButton}
               onPress={carregarHistorico}
+              accessibilityRole="button"
+              accessibilityLabel="Tentar carregar o histórico novamente"
             >
               <Text style={styles.emptyButtonText}>
                 Tentar novamente
@@ -295,6 +305,8 @@ export default function Historico() {
             <Pressable
               style={styles.emptyButton}
               onPress={() => router.push("/locais")}
+              accessibilityRole="button"
+              accessibilityLabel="Ver locais"
             >
               <Text style={styles.emptyButtonText}>
                 Ver locais

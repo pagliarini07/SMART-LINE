@@ -256,7 +256,12 @@ export default function MinhaSenha() {
       <StatusBar barStyle="dark-content" backgroundColor={COLORS.background} />
 
       <View style={styles.header}>
-        <Pressable style={styles.backButton} onPress={() => router.back()}>
+        <Pressable
+          style={styles.backButton}
+          onPress={() => router.back()}
+          accessibilityRole="button"
+          accessibilityLabel="Voltar"
+        >
           <Ionicons name="chevron-back" size={22} color={COLORS.white} />
         </Pressable>
         <Text style={styles.headerTitle}>Minha senha</Text>
@@ -264,6 +269,12 @@ export default function MinhaSenha() {
         <Pressable
           style={styles.bellButton}
           onPress={() => router.push("/notificacoes" as never)}
+          accessibilityRole="button"
+          accessibilityLabel={
+            naoLidas > 0
+              ? `Notificações, ${naoLidas} não lidas`
+              : "Notificações"
+          }
         >
           <Ionicons name="notifications-outline" size={20} color={COLORS.blue} />
           {naoLidas > 0 ? (
@@ -363,6 +374,8 @@ export default function MinhaSenha() {
                   setErroSair("");
                   setConfirmandoSaida(true);
                 }}
+                accessibilityRole="button"
+                accessibilityLabel="Sair da fila"
               >
                 <Text style={styles.leaveButtonText}>Sair da fila</Text>
               </Pressable>
@@ -386,6 +399,8 @@ export default function MinhaSenha() {
             <Pressable
               style={styles.emptyButton}
               onPress={() => router.push("/locais")}
+              accessibilityRole="button"
+              accessibilityLabel="Ver locais"
             >
               <Text style={styles.emptyButtonText}>Ver locais</Text>
             </Pressable>

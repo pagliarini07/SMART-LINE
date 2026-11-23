@@ -205,7 +205,12 @@ export default function Conquistas() {
       <StatusBar barStyle="light-content" backgroundColor={COLORS.blue} />
 
       <View style={styles.header}>
-        <Pressable style={styles.backButton} onPress={() => router.back()}>
+        <Pressable
+          style={styles.backButton}
+          onPress={() => router.back()}
+          accessibilityRole="button"
+          accessibilityLabel="Voltar"
+        >
           <Ionicons name="chevron-back" size={20} color={COLORS.white} />
         </Pressable>
 
@@ -304,6 +309,8 @@ export default function Conquistas() {
                   ativo && styles.filterPillActive,
                 ]}
                 onPress={() => setFiltroAtivo(filtro.id)}
+                accessibilityRole="button"
+                accessibilityLabel={`Filtrar conquistas: ${filtro.nome}`}
               >
                 <Text
                   style={[
@@ -328,7 +335,11 @@ export default function Conquistas() {
           <View style={styles.emptyState}>
             <Text style={styles.emptyDescription}>{erro}</Text>
 
-            <Pressable onPress={carregarConquistas}>
+            <Pressable
+              onPress={carregarConquistas}
+              accessibilityRole="button"
+              accessibilityLabel="Tentar carregar as conquistas novamente"
+            >
               <Text style={styles.filterTextActive}>Tentar novamente</Text>
             </Pressable>
           </View>

@@ -234,6 +234,10 @@ export default function ResetPassword() {
               style={[styles.button, salvando && styles.buttonDisabled]}
               onPress={handleAlterarSenha}
               disabled={salvando}
+              accessibilityRole="button"
+              accessibilityLabel={
+                salvando ? "Salvando nova senha" : "Salvar nova senha"
+              }
             >
               {salvando ? (
                 <ActivityIndicator color="#FFFFFF" />
@@ -251,6 +255,10 @@ export default function ResetPassword() {
               style={styles.button}
               onPress={() =>
                 router.replace(sucesso ? "/login" : "/forgot-password")
+              }
+              accessibilityRole="button"
+              accessibilityLabel={
+                sucesso ? "Ir para o Login" : "Solicitar novo link"
               }
             >
               <Text style={styles.buttonText}>

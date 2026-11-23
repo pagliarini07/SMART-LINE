@@ -124,6 +124,8 @@ export default function AssistenteIA() {
         ]}
         onPress={perguntar}
         disabled={carregando || pedidoVazio}
+        accessibilityRole="button"
+        accessibilityLabel={carregando ? "Perguntando" : "Perguntar"}
       >
         <Text style={styles.buttonText}>Perguntar</Text>
       </Pressable>
