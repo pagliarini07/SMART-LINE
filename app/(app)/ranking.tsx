@@ -175,6 +175,7 @@ export default function RankingScreen() {
             style={styles.retryButton}
             onPress={carregarRanking}
             accessibilityRole="button"
+            accessibilityLabel="Tentar carregar o ranking novamente"
           >
             <Text style={styles.retryButtonText}>Tentar novamente</Text>
           </Pressable>
@@ -222,6 +223,11 @@ export default function RankingScreen() {
                   onPress={carregarMais}
                   disabled={carregandoMais}
                   accessibilityRole="button"
+                  accessibilityLabel={
+                    carregandoMais
+                      ? "Carregando mais locais do ranking"
+                      : "Carregar mais locais do ranking"
+                  }
                 >
                   {carregandoMais ? (
                     <ActivityIndicator color={COLORS.blue} />

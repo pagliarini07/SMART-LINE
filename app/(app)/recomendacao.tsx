@@ -141,7 +141,12 @@ export default function RecomendacaoInteligente() {
       <StatusBar barStyle="dark-content" backgroundColor={COLORS.background} />
 
       <View style={styles.header}>
-        <Pressable style={styles.backButton} onPress={() => router.back()}>
+        <Pressable
+          style={styles.backButton}
+          onPress={() => router.back()}
+          accessibilityRole="button"
+          accessibilityLabel="Voltar"
+        >
           <Ionicons name="chevron-back" size={22} color={COLORS.white} />
         </Pressable>
         <Text style={styles.headerTitle}>O que você precisa?</Text>
@@ -169,6 +174,8 @@ export default function RecomendacaoInteligente() {
           style={[styles.searchButton, buscando && styles.searchButtonDisabled]}
           onPress={handleBuscar}
           disabled={buscando}
+          accessibilityRole="button"
+          accessibilityLabel={buscando ? "Buscando recomendação" : "Buscar recomendação"}
         >
           {buscando ? (
             <ActivityIndicator color={COLORS.white} />
@@ -240,11 +247,18 @@ export default function RecomendacaoInteligente() {
             <Pressable
               style={styles.confirmButton}
               onPress={() => handleRetirarSenha(estado.recomendacao.servicoId)}
+              accessibilityRole="button"
+              accessibilityLabel="Retirar senha"
             >
               <Text style={styles.confirmButtonText}>Retirar senha</Text>
             </Pressable>
 
-            <Pressable style={styles.naoEIssoButton} onPress={mostrarAlternativas}>
+            <Pressable
+              style={styles.naoEIssoButton}
+              onPress={mostrarAlternativas}
+              accessibilityRole="button"
+              accessibilityLabel="Não é isso? Ver outras opções"
+            >
               <Text style={styles.naoEIssoText}>Não é isso?</Text>
             </Pressable>
           </View>
@@ -281,6 +295,8 @@ export default function RecomendacaoInteligente() {
                 <Pressable
                   style={styles.opcaoButton}
                   onPress={() => handleRetirarSenha(opcao.servicoId)}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Retirar senha para ${opcao.titulo}`}
                 >
                   <Text style={styles.opcaoButtonText}>Retirar senha</Text>
                 </Pressable>
@@ -290,6 +306,8 @@ export default function RecomendacaoInteligente() {
             <Pressable
               style={styles.verLocaisButton}
               onPress={() => router.push("/locais")}
+              accessibilityRole="button"
+              accessibilityLabel="Nenhuma dessas, ver todos os locais"
             >
               <Text style={styles.verLocaisText}>
                 Nenhuma dessas — ver todos os locais

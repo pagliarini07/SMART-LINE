@@ -54,7 +54,12 @@ export default function Login() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <Pressable style={styles.backButton} onPress={() => router.back()}>
+      <Pressable
+        style={styles.backButton}
+        onPress={() => router.back()}
+        accessibilityRole="button"
+        accessibilityLabel="Voltar"
+      >
         <Ionicons name="chevron-back" size={22} color="#FFFFFF" />
       </Pressable>
       <View style={styles.content}>
@@ -123,6 +128,7 @@ export default function Login() {
         <Pressable
           onPress={() => router.push("/forgot-password")}
           accessibilityRole="button"
+          accessibilityLabel="Esqueci minha senha"
         >
           <Text style={styles.forgotPasswordText}>
             Esqueci minha senha
@@ -140,6 +146,7 @@ export default function Login() {
           onPress={handleLogin}
           disabled={entrando}
           accessibilityRole="button"
+          accessibilityLabel={entrando ? "Entrando" : "Entrar"}
         >
           {entrando ? (
             <View style={styles.loadingRow}>
@@ -155,8 +162,12 @@ export default function Login() {
           )}
         </Pressable>
 
-        <Pressable>
-          <Text style={styles.registerText} onPress={() => router.push("/cadastro")}>
+        <Pressable
+          onPress={() => router.push("/cadastro")}
+          accessibilityRole="button"
+          accessibilityLabel="Ainda não tenho conta, ir para cadastro"
+        >
+          <Text style={styles.registerText}>
             Ainda não tenho conta
           </Text>
         </Pressable>

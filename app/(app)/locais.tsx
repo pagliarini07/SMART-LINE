@@ -373,6 +373,7 @@ export default function Locais() {
                 style={styles.clearButton}
                 accessibilityRole="button"
                 accessibilityLabel="Limpar busca"
+                hitSlop={8}
               >
                 <Ionicons name="close-circle" size={20} color={COLORS.secondary} />
               </Pressable>
@@ -392,6 +393,8 @@ export default function Locais() {
                 styles.categoryAuto,
                 categoriaAtiva === CATEGORIA_TODOS && styles.categoryActive,
               ]}
+              accessibilityRole="button"
+              accessibilityLabel="Filtrar por todas as categorias"
             >
               <Ionicons name="apps-outline" size={14} color={COLORS.blue} />
 
@@ -416,6 +419,8 @@ export default function Locais() {
                   styles.categoryAuto,
                   categoriaAtiva === categoria.id && styles.categoryActive,
                 ]}
+                accessibilityRole="button"
+                accessibilityLabel={`Filtrar por categoria: ${categoria.nome}`}
               >
                 <Ionicons
                   name={categoria.icone}
@@ -453,6 +458,8 @@ export default function Locais() {
               <Pressable
                 style={styles.rankingButton}
                 onPress={() => router.push("/ranking")}
+                accessibilityRole="button"
+                accessibilityLabel="Ver ranking de locais"
               >
                 <Ionicons
                   name="trophy-outline"
@@ -472,6 +479,15 @@ export default function Locais() {
               onPress={obterLocalizacao}
               disabled={carregandoLocalizacao || carregandoRotas}
               accessibilityRole="button"
+              accessibilityLabel={
+                carregandoRotas
+                  ? "Calculando rotas"
+                  : carregandoLocalizacao
+                    ? "Localizando"
+                    : coordenadasUsuario
+                      ? "Atualizar localização"
+                      : "Usar minha localização"
+              }
             >
               {carregandoLocalizacao || carregandoRotas ? (
                 <ActivityIndicator color={COLORS.white} size="small" />
@@ -501,6 +517,11 @@ export default function Locais() {
               }
               disabled={!coordenadasUsuario}
               accessibilityRole="button"
+              accessibilityLabel={
+                ordenarPorProximidade
+                  ? "Voltar para ordem padrão"
+                  : "Ordenar por locais mais próximos"
+              }
             >
               <Ionicons
                 name="swap-vertical"
@@ -623,6 +644,8 @@ export default function Locais() {
                     <Pressable
                       style={styles.servicesButton}
                       onPress={() => abrirServicos(local.id)}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Ver serviços de ${local.nome}`}
                     >
                       <Text style={styles.servicesButtonText}>
                         Ver serviços
@@ -638,6 +661,8 @@ export default function Locais() {
                     <Pressable
                       style={styles.ratingButton}
                       onPress={() => abrirAvaliacao(local.id)}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Avaliar ${local.nome}`}
                     >
                       <Ionicons
                         name="star-outline"
@@ -654,6 +679,7 @@ export default function Locais() {
                       style={styles.routeButton}
                       onPress={() => abrirRota(local)}
                       accessibilityRole="button"
+                      accessibilityLabel={`Como chegar em ${local.nome}`}
                     >
                       <Ionicons
                         name="navigate"
@@ -691,6 +717,7 @@ export default function Locais() {
                     style={styles.retryButton}
                     onPress={carregarDados}
                     accessibilityRole="button"
+                    accessibilityLabel="Tentar carregar os locais novamente"
                   >
                     <Text style={styles.retryButtonText}>Tentar novamente</Text>
                   </Pressable>

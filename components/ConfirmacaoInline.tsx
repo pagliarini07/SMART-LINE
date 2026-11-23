@@ -52,6 +52,7 @@ export default function ConfirmacaoInline({
           onPress={onCancelar}
           disabled={carregando}
           accessibilityRole="button"
+          accessibilityLabel={textoCancelar}
         >
           <Text style={styles.cancelText}>{textoCancelar}</Text>
         </Pressable>
@@ -65,6 +66,7 @@ export default function ConfirmacaoInline({
           onPress={onConfirmar}
           disabled={carregando}
           accessibilityRole="button"
+          accessibilityLabel={textoConfirmar}
         >
           {carregando ? (
             <ActivityIndicator color={COLORS.white} />

@@ -101,6 +101,9 @@ export default function ForgotPassword() {
           onPress={handleRecuperarSenha}
           disabled={carregando}
           accessibilityRole="button"
+          accessibilityLabel={
+            carregando ? "Enviando link de recuperação" : "Enviar link de recuperação"
+          }
         >
           {carregando ? (
             <ActivityIndicator color="#FFFFFF" />
@@ -113,6 +116,7 @@ export default function ForgotPassword() {
           onPress={() => router.replace("/login")}
           disabled={carregando}
           accessibilityRole="button"
+          accessibilityLabel="Voltar para o Login"
         >
           <Text style={styles.loginText}>Voltar para o Login</Text>
         </Pressable>

@@ -91,6 +91,8 @@ export default function Sequencia() {
         <Pressable
           style={styles.backButton}
           onPress={() => router.back()}
+          accessibilityRole="button"
+          accessibilityLabel="Voltar"
         >
           <Ionicons
             name="chevron-back"
@@ -288,6 +290,7 @@ export default function Sequencia() {
                   style={styles.retryButton}
                   onPress={carregarSequencia}
                   accessibilityRole="button"
+                  accessibilityLabel="Tentar carregar a sequência novamente"
                 >
                   <Text style={styles.retryButtonText}>
                     Tentar novamente

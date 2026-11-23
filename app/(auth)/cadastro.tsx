@@ -81,7 +81,12 @@ export default function Cadastro() {
   return (
     <SafeAreaView style={styles.container}>
       
-      <Pressable style={styles.backButton} onPress={() => router.back()}>
+      <Pressable
+        style={styles.backButton}
+        onPress={() => router.back()}
+        accessibilityRole="button"
+        accessibilityLabel="Voltar"
+      >
         <Ionicons name="chevron-back" size={22} color="#FFFFFF" />
       </Pressable>
 
@@ -164,6 +169,7 @@ export default function Cadastro() {
           onPress={handleCadastro}
           disabled={criando}
           accessibilityRole="button"
+          accessibilityLabel={criando ? "Criando conta" : "Criar conta"}
         >
           {criando ? (
             <View style={styles.loadingRow}>
@@ -179,8 +185,12 @@ export default function Cadastro() {
           )}
         </Pressable>
 
-        <Pressable>
-          <Text style={styles.loginText} onPress={() => router.push("/login")}>
+        <Pressable
+          onPress={() => router.push("/login")}
+          accessibilityRole="button"
+          accessibilityLabel="Já tenho uma conta, ir para login"
+        >
+          <Text style={styles.loginText}>
             Já tenho uma conta
           </Text>
         </Pressable>

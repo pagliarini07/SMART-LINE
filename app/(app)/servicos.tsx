@@ -136,7 +136,12 @@ export default function Inicio() {
           </View>
 
           <View style={styles.headerTop}>
-            <Pressable style={styles.backButton} onPress={() => router.back()}>
+            <Pressable
+              style={styles.backButton}
+              onPress={() => router.back()}
+              accessibilityRole="button"
+              accessibilityLabel="Voltar"
+            >
               <Ionicons name="chevron-back" size={22} color={COLORS.text} />
             </Pressable>
 
@@ -176,6 +181,7 @@ export default function Inicio() {
               style={styles.retryButton}
               onPress={carregarServicos}
               accessibilityRole="button"
+              accessibilityLabel="Tentar carregar os serviços novamente"
             >
               <Text style={styles.retryButtonText}>Tentar novamente</Text>
             </Pressable>
@@ -295,6 +301,8 @@ export default function Inicio() {
                           params: { servicoId: servico.id },
                         } as never)
                       }
+                      accessibilityRole="button"
+                      accessibilityLabel={`Retirar senha para ${servico.titulo}`}
                     >
                       <Text style={styles.queueButtonText}>Retirar senha</Text>
                       <Ionicons

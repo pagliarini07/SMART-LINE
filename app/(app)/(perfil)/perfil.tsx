@@ -297,7 +297,12 @@ export default function Perfil() {
       <StatusBar barStyle="dark-content" backgroundColor={COLORS.background} />
 
       <View style={styles.header}>
-        <Pressable style={styles.backButton} onPress={() => router.back()}>
+        <Pressable
+          style={styles.backButton}
+          onPress={() => router.back()}
+          accessibilityRole="button"
+          accessibilityLabel="Voltar"
+        >
           <Ionicons name="chevron-back" size={22} color={COLORS.white} />
         </Pressable>
         <Text style={styles.headerTitle}>Perfil</Text>
@@ -338,6 +343,8 @@ export default function Perfil() {
                   setSucesso("");
                   setEditando(true);
                 }}
+                accessibilityRole="button"
+                accessibilityLabel="Editar dados do perfil"
               >
                 <Ionicons
                   name="create-outline"
@@ -391,6 +398,8 @@ export default function Perfil() {
                 style={styles.cancelButton}
                 onPress={handleCancelar}
                 disabled={salvando}
+                accessibilityRole="button"
+                accessibilityLabel="Cancelar edição dos dados"
               >
                 <Text style={styles.cancelButtonText}>Cancelar</Text>
               </Pressable>
@@ -399,6 +408,8 @@ export default function Perfil() {
                 style={[styles.saveButton, salvando && styles.saveButtonDisabled]}
                 onPress={handleSalvar}
                 disabled={salvando}
+                accessibilityRole="button"
+                accessibilityLabel="Salvar dados do perfil"
               >
                 {salvando ? (
                   <ActivityIndicator color={COLORS.white} />
@@ -418,6 +429,8 @@ export default function Perfil() {
         <Pressable
           style={styles.sequenceCard}
           onPress={() => router.push("/sequencia")}
+          accessibilityRole="button"
+          accessibilityLabel="Ver sequência de atendimentos"
         >
           <View style={styles.sequenceIcon}>
             <Ionicons
@@ -528,6 +541,8 @@ export default function Perfil() {
         <Pressable
           style={styles.ratingButton}
           onPress={() => router.push("/minhas-avaliacoes")}
+          accessibilityRole="button"
+          accessibilityLabel="Ver minhas avaliações"
         >
           <View style={styles.ratingIconWrap}>
             <Ionicons
@@ -577,6 +592,8 @@ export default function Perfil() {
               setErroSair("");
               setConfirmandoSaida(true);
             }}
+            accessibilityRole="button"
+            accessibilityLabel="Sair da conta"
           >
             <Ionicons name="log-out-outline" size={18} color="#D32F2F" />
             <Text style={styles.logoutButtonText}>Sair</Text>

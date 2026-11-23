@@ -91,7 +91,12 @@ export default function Notificacoes() {
       <StatusBar barStyle="dark-content" backgroundColor={COLORS.background} />
 
       <View style={styles.header}>
-        <Pressable style={styles.backButton} onPress={() => router.back()}>
+        <Pressable
+          style={styles.backButton}
+          onPress={() => router.back()}
+          accessibilityRole="button"
+          accessibilityLabel="Voltar"
+        >
           <Ionicons name="chevron-back" size={22} color={COLORS.white} />
         </Pressable>
         <Text style={styles.headerTitle}>Notificações</Text>
@@ -112,6 +117,12 @@ export default function Notificacoes() {
                 !notificacao.lida && styles.cardNaoLida,
               ]}
               onPress={() => handleMarcarComoLida(notificacao)}
+              accessibilityRole="button"
+              accessibilityLabel={
+                notificacao.lida
+                  ? notificacao.titulo
+                  : `${notificacao.titulo}, não lida`
+              }
             >
               <View style={styles.cardIcon}>
                 <Ionicons
@@ -162,6 +173,7 @@ export default function Notificacoes() {
               style={styles.retryButton}
               onPress={carregar}
               accessibilityRole="button"
+              accessibilityLabel="Tentar carregar as notificações novamente"
             >
               <Text style={styles.retryButtonText}>Tentar novamente</Text>
             </Pressable>

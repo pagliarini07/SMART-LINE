@@ -97,6 +97,8 @@ export default function MinhasAvaliacoes() {
       <Pressable
         style={styles.card}
         onPress={() => abrirAvaliacao(item.local_id)}
+        accessibilityRole="button"
+        accessibilityLabel={`Editar avaliação de ${local?.nome ?? "local"}`}
       >
         <View style={styles.iconContainer}>
           <Ionicons
@@ -171,6 +173,8 @@ export default function MinhasAvaliacoes() {
         <Pressable
           style={styles.backButton}
           onPress={() => router.back()}
+          accessibilityRole="button"
+          accessibilityLabel="Voltar"
         >
           <Ionicons
             name="arrow-back"
@@ -212,6 +216,8 @@ export default function MinhasAvaliacoes() {
           <Pressable
             style={styles.retryButton}
             onPress={carregarAvaliacoes}
+            accessibilityRole="button"
+            accessibilityLabel="Tentar carregar as avaliações novamente"
           >
             <Text style={styles.retryButtonText}>
               Tentar novamente
@@ -240,6 +246,8 @@ export default function MinhasAvaliacoes() {
           <Pressable
             style={styles.exploreButton}
             onPress={() => router.push("/locais" as never)}
+            accessibilityRole="button"
+            accessibilityLabel="Ver locais"
           >
             <Text style={styles.exploreButtonText}>
               Ver locais
