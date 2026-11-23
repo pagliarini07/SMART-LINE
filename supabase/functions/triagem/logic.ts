@@ -1,3 +1,9 @@
+// Issue #109: intervalo mínimo entre pedidos de um mesmo usuário, aplicado
+// no servidor via a RPC checar_cooldown_triagem (tabela
+// triagem_rate_limit). Evita custo excessivo com a API do Gemini em caso
+// de reenvio rápido ou uso automatizado da sessão.
+export const COOLDOWN_TRIAGEM_SEGUNDOS = 20;
+
 export type CatalogoServico = {
   id: string;
   titulo: string;
@@ -326,6 +332,18 @@ export function extrairJsonDaIA(texto: string): unknown {
   } catch {
     throw new Error("A IA retornou JSON inválido.");
   }
+}
+
+/**
+ * Mensagem amigável quando o cooldown entre pedidos ainda não passou
+ * (issue #109). O app mostra isso em vez de um erro genérico.
+ */
+export function mensagemLimiteTriagem(segundosRestantes: number): string {
+  const segundos = Math.max(1, Math.round(segundosRestantes));
+
+  return segundos === 1
+    ? "Espere 1 segundo antes de perguntar de novo."
+    : `Espere ${segundos} segundos antes de perguntar de novo.`;
 }
 
 /** Erro HTTP devolvido pela API do Gemini (cota, fora do ar, etc.). */

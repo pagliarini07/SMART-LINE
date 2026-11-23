@@ -8,6 +8,7 @@ import {
   aplicarPoliticaConfianca,
   extrairJsonDaIA,
   extrairTextoGemini,
+  mensagemLimiteTriagem,
   respostaDeFalhaDaIA,
   sanitizarPedido,
   validarTriagemResposta,
@@ -298,5 +299,31 @@ describe("respostaDeFalhaDaIA", () => {
     );
     expect(respostaDeFalhaDaIA(new ErroProvedorIA(400)).status).toBe(502);
     expect(respostaDeFalhaDaIA("qualquer coisa").status).toBe(502);
+  });
+});
+
+describe("mensagemLimiteTriagem", () => {
+  it("usa plural pra mais de um segundo", () => {
+    expect(mensagemLimiteTriagem(5)).toBe(
+      "Espere 5 segundos antes de perguntar de novo."
+    );
+  });
+
+  it("usa singular pra exatamente 1 segundo", () => {
+    expect(mensagemLimiteTriagem(1)).toBe(
+      "Espere 1 segundo antes de perguntar de novo."
+    );
+  });
+
+  it("arredonda e nunca mostra menos de 1 segundo", () => {
+    expect(mensagemLimiteTriagem(0.4)).toBe(
+      "Espere 1 segundo antes de perguntar de novo."
+    );
+    expect(mensagemLimiteTriagem(0)).toBe(
+      "Espere 1 segundo antes de perguntar de novo."
+    );
+    expect(mensagemLimiteTriagem(-3)).toBe(
+      "Espere 1 segundo antes de perguntar de novo."
+    );
   });
 });

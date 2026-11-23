@@ -126,6 +126,43 @@ describe("triarPedido", () => {
     expect(await tipoDoErro(triarPedido("RG"))).toBe("nao_autenticado");
   });
 
+  it("identifica limite de pedidos atingido (429) e usa a mensagem do servidor", async () => {
+    mockInvoke.mockResolvedValueOnce({
+      data: null,
+      error: new FunctionsHttpError({
+        status: 429,
+        text: async () =>
+          JSON.stringify({
+            error: "Espere 12 segundos antes de perguntar de novo.",
+          }),
+      }),
+    });
+
+    try {
+      await triarPedido("RG");
+      throw new Error("era esperado um erro");
+    } catch (error) {
+      expect((error as ErroTriagem).tipo).toBe("limite_atingido");
+      expect(mensagemErroTriagem(error)).toBe(
+        "Espere 12 segundos antes de perguntar de novo."
+      );
+    }
+  });
+
+  it("limite de pedidos sem corpo legível cai na mensagem genérica", async () => {
+    mockInvoke.mockResolvedValueOnce({
+      data: null,
+      error: new FunctionsHttpError({ status: 429 }),
+    });
+
+    const erro = await triarPedido("RG").catch((error) => error);
+
+    expect(erro.tipo).toBe("limite_atingido");
+    expect(mensagemErroTriagem(erro)).toBe(
+      "Você está perguntando rápido demais. Espere um pouco antes de tentar de novo."
+    );
+  });
+
   it("rejeita resposta fora do formato", async () => {
     mockInvoke.mockResolvedValueOnce({
       data: { ...respostaValida, confianca: "alta" },
