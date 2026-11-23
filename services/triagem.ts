@@ -28,7 +28,8 @@ export type TipoErroTriagem =
   | "nao_autenticado"
   | "erro_ia"
   | "ia_indisponivel"
-  | "resposta_invalida";
+  | "resposta_invalida"
+  | "limite_atingido";
 
 // Usada se a função não mandar pergunta junto de uma resposta sem serviço
 // (a versão atual sempre manda; isso protege contra versões antigas).
@@ -42,6 +43,20 @@ export class ErroTriagem extends Error {
     super(mensagem);
     this.name = "ErroTriagem";
     this.tipo = tipo;
+  }
+}
+
+/** Lê o campo "error" do corpo JSON devolvido pela Edge Function, se der. */
+function extrairMensagemDeErro(corpo: string | undefined): string | null {
+  if (!corpo) {
+    return null;
+  }
+
+  try {
+    const dados = JSON.parse(corpo);
+    return typeof dados?.error === "string" ? dados.error : null;
+  } catch {
+    return null;
   }
 }
 
@@ -155,6 +170,14 @@ export async function triarPedido(pedido: string): Promise<TriagemResposta> {
       if (resposta?.status === 504) {
         throw new ErroTriagem("timeout", "A IA demorou demais.");
       }
+
+      // 429: limite de pedidos por usuário (issue #109). O corpo traz
+      // quanto falta esperar; se não der pra ler, cai na mensagem genérica
+      // de mensagemErroTriagem.
+      if (resposta?.status === 429) {
+        const mensagemServidor = extrairMensagemDeErro(detalhe);
+        throw new ErroTriagem("limite_atingido", mensagemServidor ?? "");
+      }
     }
 
     // FunctionsHttpError (erro dentro da função/IA) ou FunctionsRelayError.
@@ -183,6 +206,10 @@ export function mensagemErroTriagem(error: unknown): string {
       return "O assistente está indisponível agora. Tente de novo em alguns minutos ou escolha na lista abaixo.";
     case "resposta_invalida":
       return "Não conseguimos entender a resposta do assistente. Tente descrever de outro jeito ou escolha na lista abaixo.";
+    case "limite_atingido":
+      return error instanceof ErroTriagem && error.message
+        ? error.message
+        : "Você está perguntando rápido demais. Espere um pouco antes de tentar de novo.";
     default:
       return "O assistente não conseguiu responder agora. Você pode tentar de novo ou escolher na lista abaixo.";
   }

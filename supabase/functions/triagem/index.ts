@@ -1,11 +1,13 @@
 import { withSupabase } from "npm:@supabase/server@1.9.2";
 import {
   CatalogoServico,
+  COOLDOWN_TRIAGEM_SEGUNDOS,
   ErroProvedorIA,
   TRIAGEM_JSON_SCHEMA,
   aplicarPoliticaConfianca,
   extrairJsonDaIA,
   extrairTextoGemini,
+  mensagemLimiteTriagem,
   respostaDeFalhaDaIA,
   sanitizarPedido,
   validarTriagemResposta,
@@ -438,6 +440,29 @@ export default {
         return respostaErro(
           503,
           "Serviço de IA não configurado."
+        );
+      }
+
+      // Limite de pedidos por usuário (issue #109): checado no banco antes
+      // de gastar uma chamada real pra API do Gemini. Usa ctx.supabase (o
+      // client do próprio usuário) pra a função conseguir ler auth.uid().
+      const { data: limite, error: erroLimite } = await ctx.supabase
+        .rpc("checar_cooldown_triagem", {
+          p_cooldown_segundos: COOLDOWN_TRIAGEM_SEGUNDOS,
+        })
+        .single();
+
+      if (erroLimite) {
+        // Falha ao checar o limite não deve travar quem está usando
+        // normalmente -- loga e segue sem bloquear.
+        console.error(
+          "Erro ao checar limite de pedidos da triagem:",
+          erroLimite.message
+        );
+      } else if (limite && !limite.permitido) {
+        return respostaErro(
+          429,
+          mensagemLimiteTriagem(limite.segundos_restantes)
         );
       }
 
