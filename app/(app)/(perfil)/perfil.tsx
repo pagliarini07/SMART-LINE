@@ -20,7 +20,12 @@ import {
   getResumoNivelUsuario,
   type ResumoNivelUsuario,
 } from "../../../services/niveis";
-import { getProfile, saveProfile } from "../../../services/profiles";
+import {
+  atualizarEmailLogin,
+  getProfile,
+  saveProfile,
+} from "../../../services/profiles";
+import { mensagemErroSupabase } from "../../../utils/errors";
 import {
   getSequenciaAtendimentos,
   type DadosSequencia,
@@ -101,7 +106,10 @@ export default function Perfil() {
         const perfil = await getProfile(user.id);
 
         const nomeCarregado = perfil?.nome ?? "";
-        const emailCarregado = perfil?.email ?? user.email ?? "";
+        // user.email (Supabase Auth) é a fonte da verdade do e-mail de
+        // login (issue #106) -- só cai pro valor salvo em usuarios.email
+        // se por algum motivo a sessão não tiver um e-mail carregado.
+        const emailCarregado = user.email ?? perfil?.email ?? "";
         const cpfCarregado = perfil?.cpf ?? "";
 
         setNome(nomeCarregado);
@@ -201,6 +209,25 @@ export default function Perfil() {
       const nomeSalvo = nome.trim();
       const emailSalvo = email.trim();
       const cpfSalvo = apenasDigitos(cpf);
+      const emailMudou = emailSalvo !== emailOriginal;
+
+      // Issue #106: o e-mail do Perfil agora é o e-mail de login, então
+      // muda o Auth primeiro. Se falhar (ex.: e-mail já usado por outra
+      // conta), nada é salvo em usuarios -- evita um e-mail "pendente" no
+      // perfil sem nenhuma confirmação enviada.
+      if (emailMudou) {
+        try {
+          await atualizarEmailLogin(emailSalvo);
+        } catch (error) {
+          setErro(
+            mensagemErroSupabase(
+              error,
+              "Não foi possível atualizar seu e-mail de login. Tente novamente."
+            )
+          );
+          return;
+        }
+      }
 
       await saveProfile(user.id, {
         nome: nomeSalvo,
@@ -217,7 +244,11 @@ export default function Perfil() {
       setCpfOriginal(cpfSalvo);
 
       setEditando(false);
-      setSucesso("Dados salvos com sucesso.");
+      setSucesso(
+        emailMudou
+          ? "Dados salvos. Enviamos um link de confirmação para o novo e-mail -- seu e-mail de login só muda depois que você confirmar."
+          : "Dados salvos com sucesso."
+      );
     } catch (error) {
       console.error("Erro ao salvar perfil:", error);
 
@@ -335,6 +366,14 @@ export default function Perfil() {
                 value={email}
                 onChangeText={setEmail}
               />
+
+              {email.trim() !== emailOriginal ? (
+                <Text style={styles.emailChangeNotice}>
+                  Esse também é o e-mail que você usa para entrar na conta.
+                  Vamos enviar um link de confirmação para o novo endereço —
+                  seu e-mail de login só muda depois que você confirmar.
+                </Text>
+              ) : null}
 
               <Text style={styles.label}>CPF</Text>
               <TextInput
@@ -682,6 +721,19 @@ const styles = StyleSheet.create({
     color: COLORS.text,
     marginBottom: 6,
     alignSelf: "flex-start",
+  },
+
+  emailChangeNotice: {
+    width: "100%",
+    color: COLORS.secondary,
+    fontSize: 11.5,
+    lineHeight: 16,
+    backgroundColor: COLORS.lightBlue,
+    borderRadius: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    marginTop: -8,
+    marginBottom: 14,
   },
 
   input: {
